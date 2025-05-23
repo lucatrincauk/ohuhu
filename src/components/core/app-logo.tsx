@@ -2,22 +2,24 @@
 import { Palette } from 'lucide-react';
 import type { SVGProps } from 'react';
 import { cn } from '@/lib/utils';
-// Removed: import { SheetTitle } from '@/components/ui/sheet';
 
 interface AppLogoProps extends SVGProps<SVGSVGElement> {
   showText?: boolean;
-  id?: string; // The ID for the title element
+  // id prop removed as it's no longer used for aria-labelledby by SheetContent
 }
 
-export function AppLogo({ showText = true, className, id, ...props }: AppLogoProps) {
+export function AppLogo({ showText = true, className, ...props }: AppLogoProps) {
   return (
     <div className="flex items-center gap-2">
       <Palette className={cn('h-8 w-8 text-primary', className)} {...props} />
       {showText && (
-          <h1 id={id} className="text-xl font-semibold text-foreground"> {/* Ensure id is passed to h1 */}
+          // The h1 is for semantic structure (e.g., on desktop).
+          // Mobile sheet title will be handled by UiSheetTitle in sidebar.tsx.
+          <h1 className="text-xl font-semibold text-foreground">
             Ohuhu Harmony
           </h1>
       )}
     </div>
   );
 }
+

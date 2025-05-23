@@ -10,7 +10,7 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
-  SIDEBAR_TITLE_ID,
+  // SIDEBAR_TITLE_ID, // No longer imported as AppLogo doesn't need it for this purpose
 } from '@/components/ui/sidebar';
 import { AppLogo } from '@/components/core/app-logo';
 import { AddMarkerForm } from '@/components/markers/add-marker-form';
@@ -322,7 +322,8 @@ export default function OhuhuHarmonyPage() {
       <div className="flex min-h-screen">
         <Sidebar collapsible="icon" variant="sidebar" className="border-r shadow-md">
           <SidebarHeader className="p-4 border-b">
-            <AppLogo id={SIDEBAR_TITLE_ID} />
+             {/* AppLogo no longer needs explicit ID for mobile sheet title */}
+            <AppLogo />
           </SidebarHeader>
           <SidebarContent className="p-0">
             <ScrollArea className="h-full">

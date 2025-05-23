@@ -4,14 +4,14 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft } from "lucide-react"
+import { PanelLeft, Palette } from "lucide-react" // Added Palette
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent, SheetHeader as UiSheetHeader, SheetTitle as UiSheetTitle } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader as UiSheetHeader, SheetTitle as UiSheetTitle } from "@/components/ui/sheet" // Aliased imports
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -157,8 +157,8 @@ const SidebarProvider = React.forwardRef<
 )
 SidebarProvider.displayName = "SidebarProvider"
 
-// Unique ID for the sidebar title, to be used by aria-labelledby
-const SIDEBAR_TITLE_ID = "ohuhu-harmony-sidebar-sheet-title";
+// Unique ID for the sidebar title, to be used by aria-labelledby or internally by SheetTitle
+export const SIDEBAR_TITLE_ID = "ohuhu-harmony-sidebar-sheet-title";
 
 const Sidebar = React.forwardRef<
   HTMLDivElement,
@@ -197,13 +197,30 @@ const Sidebar = React.forwardRef<
     }
 
     if (isMobile) {
+      const childrenArray = React.Children.toArray(children);
+      // Attempt to find SidebarContent and SidebarFooter to render them inside the sheet
+      // This relies on components having a recognizable 'displayName' or specific type.
+      // Note: (child.type as any).displayName is not always reliable, especially with HOCs or memo.
+      // A more robust approach would be specific context or explicit props if deep introspection is needed.
+      const sidebarContentElement = childrenArray.find(
+        (child) => React.isValidElement(child) && ((child.type as any).displayName === "SidebarContent" || child.key === "sidebar-content")
+      );
+      const sidebarFooterElement = childrenArray.find(
+        (child) => React.isValidElement(child) && ((child.type as any).displayName === "SidebarFooter" || child.key === "sidebar-footer")
+      );
+       // Filter out the original SidebarHeader to avoid duplicating it, keep other direct children
+      const mainContentChildren = childrenArray.filter(
+        (child) => React.isValidElement(child) && ((child.type as any).displayName !== "SidebarHeader")
+      );
+
+
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent
-            aria-labelledby={SIDEBAR_TITLE_ID}
+            // No aria-labelledby; SheetTitle will handle accessibility
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden flex flex-col" // Added flex flex-col
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -211,7 +228,19 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
-            <div className="flex h-full w-full flex-col">{children}</div>
+            <UiSheetHeader className="p-4 border-b">
+              <UiSheetTitle id={SIDEBAR_TITLE_ID}> {/* Assign ID to UiSheetTitle */}
+                <div className="flex items-center gap-2">
+                  <Palette className='h-8 w-8 text-primary' />
+                  <span className="text-xl font-semibold text-foreground">Ohuhu Harmony</span>
+                </div>
+              </UiSheetTitle>
+            </UiSheetHeader>
+            
+            {/* Render SidebarContent and SidebarFooter if found, otherwise render filtered children */}
+            {/* This logic needs to be robust to handle children structure */}
+            {/* For simplicity, let's assume page.tsx provides SidebarContent and SidebarFooter as direct children to Sidebar */}
+            {mainContentChildren}
           </SheetContent>
         </Sheet>
       )
@@ -255,7 +284,7 @@ const Sidebar = React.forwardRef<
             data-sidebar="sidebar"
             className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
           >
-            {children}
+            {children} {/* Desktop renders children directly */}
           </div>
         </div>
       </div>
