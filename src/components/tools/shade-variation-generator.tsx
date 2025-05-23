@@ -3,47 +3,82 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-// Input removed as per request
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateShadeVariations, type GenerateShadeVariationsInput, type GenerateShadeVariationsOutput, type ShadeVariationResult } from '@/ai/flows/shade-variation-generator';
+import { generateShadeVariations, type GenerateShadeVariationsInput, type ShadeVariationResult } from '@/ai/flows/shade-variation-generator';
 import { useToast } from '@/hooks/use-toast';
 import type { Marker } from '@/lib/types';
 import { ColorSwatch } from '@/components/core/color-swatch';
-import { Layers, Palette } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Layers, Palette, Check, ChevronsUpDown } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 interface ShadeVariationGeneratorProps {
   inventory: Marker[];
-  selectedMarkerForShades?: Marker | null; // Optional prop to pre-fill from MarkerCard
-  onClearSelectedMarker?: () => void; // Callback to clear selection
+  selectedMarkerForShades?: Marker | null;
+  onClearSelectedMarker?: () => void;
 }
 
-// hexColorRegex removed as manual input is gone
-
 export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, onClearSelectedMarker }: ShadeVariationGeneratorProps) {
-  const [baseColor, setBaseColor] = useState<string>(''); // This will now only store hex from selected inventory marker
+  const [baseColor, setBaseColor] = useState<string>('');
   const [numShades, setNumShades] = useState<number>(5);
   const [generatedShades, setGeneratedShades] = useState<ShadeVariationResult[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  // previewColor state and its useEffect removed
   const { toast } = useToast();
+  const [comboboxOpen, setComboboxOpen] = useState(false);
+  // Stores the ID of the marker selected via combobox to help display its name in the trigger
+  const [selectedMarkerIdForTrigger, setSelectedMarkerIdForTrigger] = useState<string>("");
+
 
   useEffect(() => {
     if (selectedMarkerForShades) {
       setBaseColor(selectedMarkerForShades.hex);
+      setSelectedMarkerIdForTrigger(selectedMarkerForShades.id);
     } else {
-      // If selectedMarkerForShades is cleared externally, ensure baseColor is also cleared
-      // if it matched the cleared marker. This might be redundant if onClearSelectedMarker also clears baseColor.
-      setBaseColor(''); 
+      // If cleared externally, reset component's selection state
+      if (!baseColor && !selectedMarkerIdForTrigger) return; // Avoid unnecessary sets if already clear
+      // Check if current baseColor actually came from the selectedMarkerForShades
+      // This is a bit tricky, better to just clear if selectedMarkerForShades is null
+      setBaseColor('');
+      setSelectedMarkerIdForTrigger('');
     }
   }, [selectedMarkerForShades]);
 
-  // useEffect for previewColor removed
+
+  const handleMarkerSelect = (markerId: string) => {
+    const selected = inventory.find(m => m.id === markerId);
+    if (selected) {
+      setBaseColor(selected.hex);
+      setSelectedMarkerIdForTrigger(markerId);
+      // If a marker is selected via combobox, it implies any pre-selection (selectedMarkerForShades) is overridden
+      // So, call onClearSelectedMarker if the new selection is different from the prop-based one
+      if (onClearSelectedMarker && selectedMarkerForShades && selectedMarkerForShades.id !== markerId) {
+        onClearSelectedMarker();
+      }
+    }
+    setComboboxOpen(false);
+  };
+
+  const handleClearSelection = () => {
+    setBaseColor('');
+    setGeneratedShades([]);
+    setSelectedMarkerIdForTrigger("");
+    if (onClearSelectedMarker) {
+      onClearSelectedMarker();
+    }
+  };
 
   const handleGenerateShades = async () => {
-    if (!baseColor) { // Check if a base color is selected from inventory
+    if (!baseColor) {
       toast({
         title: 'No Color Selected',
         description: 'Please select a base color from your inventory.',
@@ -96,23 +131,6 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     }
   };
 
-  const handleMarkerSelect = (markerId: string) => {
-    const selected = inventory.find(m => m.id === markerId);
-    if (selected) {
-      setBaseColor(selected.hex);
-      if (onClearSelectedMarker && selectedMarkerForShades && selectedMarkerForShades.id !== markerId) {
-        onClearSelectedMarker();
-      }
-    }
-  };
-  
-  const handleClearSelection = () => {
-    setBaseColor('');
-    setGeneratedShades([]);
-    if (onClearSelectedMarker) onClearSelectedMarker();
-  };
-
-
   return (
     <Card className="shadow-sm bg-card">
       <CardHeader>
@@ -126,30 +144,63 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
         <div className="space-y-2">
           <label className="text-sm font-medium">Base Color</label>
           <div className="flex items-center gap-2">
-            <Select 
-              onValueChange={handleMarkerSelect} 
-              value={inventory.find(m => m.hex.toLowerCase() === baseColor.toLowerCase())?.id || ""}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="flex-grow">
-                <SelectValue placeholder="Select from inventory" />
-              </SelectTrigger>
-              <SelectContent>
-                {inventory.map(marker => (
-                  <SelectItem key={marker.id} value={marker.id}>
-                    <div className="flex items-center gap-2">
-                      <ColorSwatch hexColor={marker.hex} size="sm" />
-                      {marker.name} ({marker.id})
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-             {(baseColor || selectedMarkerForShades) && ( // Show clear if a baseColor is set (from inventory) or pre-selected
+            <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={comboboxOpen}
+                  className="w-full justify-between flex-grow"
+                  disabled={isLoading || inventory.length === 0}
+                  title={inventory.length === 0 ? "Add markers to inventory first" : "Select base color"}
+                >
+                  {selectedMarkerIdForTrigger && inventory.find(m => m.id === selectedMarkerIdForTrigger)
+                    ? (
+                      <div className="flex items-center gap-2 truncate">
+                        <ColorSwatch hexColor={inventory.find(m => m.id === selectedMarkerIdForTrigger)!.hex} size="sm" />
+                         <span className="truncate">{inventory.find(m => m.id === selectedMarkerIdForTrigger)!.name}</span>
+                      </div>
+                    )
+                    : "Select from inventory..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <Command>
+                  <CommandInput placeholder="Search marker..." />
+                  <CommandList>
+                    <CommandEmpty>No marker found.</CommandEmpty>
+                    <CommandGroup>
+                      {inventory.map((marker) => (
+                        <CommandItem
+                          key={marker.id}
+                          value={`${marker.name} ${marker.id} ${marker.hex}`} // Value for searching
+                          onSelect={() => {
+                            handleMarkerSelect(marker.id);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedMarkerIdForTrigger === marker.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <div className="flex items-center gap-2">
+                            <ColorSwatch hexColor={marker.hex} size="sm" />
+                            {marker.name} ({marker.id})
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {(baseColor || selectedMarkerIdForTrigger) && (
               <Button variant="ghost" size="sm" onClick={handleClearSelection} disabled={isLoading}>Clear</Button>
             )}
           </div>
-          {/* Manual hex input and its preview swatch removed */}
         </div>
 
         <div className="space-y-2">
@@ -198,16 +249,16 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
             <h4 className="font-semibold">Suggested Shades from Your Inventory:</h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {generatedShades.map((marker, index) => (
-                <Card 
-                  key={marker.id + '-' + index} 
+                <Card
+                  key={marker.id + '-' + index}
                   className="flex flex-col items-center p-2 text-center transition-transform hover:scale-105 cursor-pointer shadow-sm"
                   onClick={() => {
                     navigator.clipboard.writeText(marker.hex);
                     toast({ title: "Copied!", description: `${marker.hex} (${marker.name}) copied to clipboard.` });
                   }}
                 >
-                  <ColorSwatch 
-                    hexColor={marker.hex} 
+                  <ColorSwatch
+                    hexColor={marker.hex}
                     size="md"
                     className="mb-1"
                   />

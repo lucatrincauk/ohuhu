@@ -9,10 +9,19 @@ import { findSimilarColors, type FindSimilarColorsInput, type FindSimilarColorsO
 import { useToast } from '@/hooks/use-toast';
 import type { Marker, MarkerInventoryItem } from '@/lib/types';
 import { ColorSwatch } from '@/components/core/color-swatch';
-import { Sparkles, SearchCode } from 'lucide-react';
+import { Sparkles, SearchCode, Check, ChevronsUpDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 interface SimilarColorFinderProps {
   inventory: Marker[];
@@ -25,8 +34,29 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
   const [similarColors, setSimilarColors] = useState<FindSimilarColorsOutput>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
+  const [comboboxOpen, setComboboxOpen] = useState(false);
+  // Stores the ID of the marker selected via combobox to help display its name in the trigger
+  const [selectedMarkerIdForTrigger, setSelectedMarkerIdForTrigger] = useState<string>("");
 
-  // previewColor state and its useEffect are removed as per user request
+
+  const handleMarkerSelect = (markerId: string) => {
+    const selected = inventory.find(m => m.id === markerId);
+    if (selected) {
+      setTargetColor(selected.hex);
+      setSelectedMarkerIdForTrigger(markerId);
+    } else {
+      // This case might happen if an invalid ID is passed or selection is cleared
+      // If clearing, ensure targetColor and selectedMarkerIdForTrigger are reset
+      // For now, assume a valid markerId is passed from combobox.
+    }
+    setComboboxOpen(false); // Close combobox on selection
+  };
+
+  const handleClearSelection = () => {
+    setTargetColor('');
+    setSimilarColors([]);
+    setSelectedMarkerIdForTrigger("");
+  };
 
   const handleFindSimilar = async () => {
     if (!hexColorRegex.test(targetColor)) {
@@ -81,18 +111,22 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
       setIsLoading(false);
     }
   };
-
-  const handleMarkerSelect = (markerId: string) => {
-    const selected = inventory.find(m => m.id === markerId);
-    if (selected) {
-      setTargetColor(selected.hex);
+  
+  // Effect to update selectedMarkerIdForTrigger if targetColor is changed manually
+  // and matches an inventory item, or clear it if no match.
+  useEffect(() => {
+    if (targetColor && hexColorRegex.test(targetColor)) {
+      const matchingMarker = inventory.find(m => m.hex.toLowerCase() === targetColor.toLowerCase());
+      if (matchingMarker) {
+        setSelectedMarkerIdForTrigger(matchingMarker.id);
+      } else {
+        setSelectedMarkerIdForTrigger(""); // targetColor is custom or invalid, no matching inventory item
+      }
+    } else if (!targetColor) {
+       setSelectedMarkerIdForTrigger(""); // targetColor cleared
     }
-  };
+  }, [targetColor, inventory]);
 
-  const handleClearSelection = () => {
-    setTargetColor('');
-    setSimilarColors([]);
-  };
 
   return (
     <Card className="shadow-sm bg-card">
@@ -107,26 +141,60 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
         <div className="space-y-2">
           <label htmlFor="similarColorInventorySelect" className="text-sm font-medium">Target Color</label>
           <div className="flex items-center gap-2">
-            <Select
-              onValueChange={handleMarkerSelect}
-              value={inventory.find(m => m.hex.toLowerCase() === targetColor.toLowerCase())?.id || ""}
-              disabled={isLoading}
-            >
-              <SelectTrigger id="similarColorInventorySelect" className="flex-grow">
-                <SelectValue placeholder="Select from inventory" />
-              </SelectTrigger>
-              <SelectContent>
-                {inventory.map(marker => (
-                  <SelectItem key={marker.id} value={marker.id}>
-                    <div className="flex items-center gap-2">
-                      <ColorSwatch hexColor={marker.hex} size="sm" />
-                      {marker.name} ({marker.id})
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {targetColor && (
+            <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={comboboxOpen}
+                  className="w-full justify-between flex-grow"
+                  disabled={isLoading || inventory.length === 0}
+                  title={inventory.length === 0 ? "Add markers to inventory first" : "Select from inventory"}
+                >
+                  {selectedMarkerIdForTrigger && inventory.find(m => m.id === selectedMarkerIdForTrigger)
+                    ? (
+                      <div className="flex items-center gap-2 truncate">
+                        <ColorSwatch hexColor={inventory.find(m => m.id === selectedMarkerIdForTrigger)!.hex} size="sm" />
+                        <span className="truncate">{inventory.find(m => m.id === selectedMarkerIdForTrigger)!.name}</span>
+                      </div>
+                    )
+                    : "Select from inventory..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <Command>
+                  <CommandInput placeholder="Search marker..." />
+                  <CommandList>
+                    <CommandEmpty>No marker found.</CommandEmpty>
+                    <CommandGroup>
+                      {inventory.map((marker) => (
+                        <CommandItem
+                          key={marker.id}
+                          value={`${marker.name} ${marker.id} ${marker.hex}`} // Value for searching
+                          onSelect={() => {
+                            handleMarkerSelect(marker.id);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedMarkerIdForTrigger === marker.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <div className="flex items-center gap-2">
+                            <ColorSwatch hexColor={marker.hex} size="sm" />
+                            {marker.name} ({marker.id})
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {targetColor && ( // Show clear button only if a target color (from any source) is set
               <Button variant="ghost" size="sm" onClick={handleClearSelection} disabled={isLoading}>Clear</Button>
             )}
           </div>
@@ -134,7 +202,11 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
             <Input
               id="targetColorInput"
               value={targetColor}
-              onChange={(e) => setTargetColor(e.target.value.toUpperCase())}
+              onChange={(e) => {
+                const newHex = e.target.value.toUpperCase();
+                setTargetColor(newHex);
+                // setSelectedMarkerIdForTrigger is handled by useEffect above
+              }}
               placeholder="Or enter #RRGGBB"
               className="flex-grow"
               disabled={isLoading}
@@ -142,16 +214,17 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
             />
             <input
               type="color"
-              value={hexColorRegex.test(targetColor) ? targetColor : '#000000'} // Default to black if targetColor is not a valid hex
+              value={hexColorRegex.test(targetColor) ? targetColor : '#000000'}
               onChange={(e) => {
-                setTargetColor(e.target.value.toUpperCase());
+                const newHex = e.target.value.toUpperCase();
+                setTargetColor(newHex);
+                // setSelectedMarkerIdForTrigger is handled by useEffect above
               }}
               disabled={isLoading}
               className="h-10 w-10 p-1 border rounded-md cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
               title="Pick a color"
               aria-label="Pick a color"
             />
-            {/* Redundant ColorSwatch removed here */}
           </div>
         </div>
         <Button onClick={handleFindSimilar} disabled={isLoading || !targetColor || inventory.length === 0} className="w-full">
@@ -188,8 +261,8 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
             <ScrollArea className="max-h-60">
               <ul className="space-y-2 pr-1">
                 {similarColors.map((marker) => (
-                  <li 
-                    key={marker.id} 
+                  <li
+                    key={marker.id}
                     className="flex items-center justify-between p-2 border rounded-md hover:bg-accent/10 transition-colors cursor-pointer"
                     onClick={() => {
                       navigator.clipboard.writeText(marker.hex);
