@@ -17,30 +17,30 @@ import { MarkerGrid } from '@/components/markers/marker-grid';
 import { SimilarColorFinder } from '@/components/tools/similar-color-finder';
 import { ShadeVariationGenerator } from '@/components/tools/shade-variation-generator';
 import { ColorFilter } from '@/components/filters/color-filter';
-import { SetFilter } from '@/components/filters/set-filter'; // New Import
+import { SetFilter } from '@/components/filters/set-filter';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import type { Marker } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search, Tags } from 'lucide-react'; // Added Tags
+import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search, Tags } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 
-type ActiveTool = 'add' | 'similar' | 'shades' | 'filter' | 'setFilter' | null; // Added setFilter
+type ActiveTool = 'add' | 'similar' | 'shades' | 'filter' | 'setFilter' | null;
 
 export default function OhuhuHarmonyPage() {
   const { markers: allMarkers, markerSets, addMarker, isInitialized } = useMarkerData();
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
   const [markersFilteredByColor, setMarkersFilteredByColor] = useState<Marker[]>([]);
-  const [selectedSetId, setSelectedSetId] = useState<string | null>(null); // New state for set filter
+  const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<ActiveTool>('add');
   const [selectedMarkerForShades, setSelectedMarkerForShades] = useState<Marker | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   useEffect(() => {
     if (isInitialized) {
-      setMarkersFilteredByColor(allMarkers); // Initialize with all markers
+      setMarkersFilteredByColor(allMarkers); 
     }
   }, [allMarkers, isInitialized]);
 
@@ -54,14 +54,10 @@ export default function OhuhuHarmonyPage() {
       tempResults = tempResults.filter(marker => marker.setId === selectedSetId);
     }
 
-    // 2. Apply Color Category Filter (using the list from ColorFilter tool)
-    // markersFilteredByColor holds the markers filtered by the ColorFilter component.
-    // If ColorFilter hasn't effectively filtered (i.e., it's showing all markers it received, or all markers if it's reset),
-    // its output list (markersFilteredByColor) will be equivalent to what it was given.
-    // A simple check is if its length is less than allMarkers.length, indicating it has filtered.
-    const isColorFilterToolActive = markersFilteredByColor.length < allMarkers.length;
+    // 2. Apply Color Category Filter
+    const isColorFilterToolActive = markersFilteredByColor.length < allMarkers.length || (activeTool === 'filter' && markersFilteredByColor.length !== allMarkers.filter(m => selectedSetId ? m.setId === selectedSetId : true).length);
+
     if (isColorFilterToolActive) {
-      // We need markers that are in tempResults AND in markersFilteredByColor
       const colorFilteredIds = new Set(markersFilteredByColor.map(m => m.id));
       tempResults = tempResults.filter(marker => colorFilteredIds.has(marker.id));
     }
@@ -78,15 +74,32 @@ export default function OhuhuHarmonyPage() {
     }
     setDisplayedMarkers(tempResults);
 
-  }, [searchTerm, markersFilteredByColor, selectedSetId, allMarkers, isInitialized]);
+  }, [searchTerm, markersFilteredByColor, selectedSetId, allMarkers, isInitialized, activeTool]);
 
 
   const handleColorFilterChange = (filteredMarkersFromColorTool: Marker[]) => {
-    setMarkersFilteredByColor(filteredMarkersFromColorTool);
+    // When color filter changes, it's applied to the currently set-filtered (or all) markers
+    let baseMarkersForColorFilter = allMarkers;
+    if (selectedSetId) {
+        baseMarkersForColorFilter = allMarkers.filter(marker => marker.setId === selectedSetId);
+    }
+    
+    // If the color filter tool returns a list that is different from its input base, apply it
+    // otherwise, it means the color filter was cleared or not effective, so we use the base.
+    if (filteredMarkersFromColorTool.length < baseMarkersForColorFilter.length) {
+         setMarkersFilteredByColor(filteredMarkersFromColorTool);
+    } else {
+        // This means the color filter was cleared or didn't change the list
+        setMarkersFilteredByColor(baseMarkersForColorFilter);
+    }
   };
 
   const handleSetFilterChange = (setId: string | null) => {
     setSelectedSetId(setId);
+    // When set filter changes, reset color filter's base to the new set-filtered list (or all markers)
+    // This ensures the color filter operates on the correct subset.
+    const newBaseForColorFilter = setId ? allMarkers.filter(marker => marker.setId === setId) : allMarkers;
+    setMarkersFilteredByColor(newBaseForColorFilter);
   };
 
   const handleSelectMarkerForShades = (marker: Marker) => {
@@ -108,6 +121,12 @@ export default function OhuhuHarmonyPage() {
   }
   
   const renderTool = () => {
+    // Determine the base markers for the ColorFilter tool
+    // It should operate on markers already filtered by set (if any)
+    const markersForColorFilterTool = selectedSetId 
+      ? allMarkers.filter(marker => marker.setId === selectedSetId) 
+      : allMarkers;
+
     switch (activeTool) {
       case 'add':
         return <AddMarkerForm markerSets={markerSets} onAddMarker={addMarker} />;
@@ -116,8 +135,8 @@ export default function OhuhuHarmonyPage() {
       case 'shades':
         return <ShadeVariationGenerator inventory={allMarkers} selectedMarkerForShades={selectedMarkerForShades} onClearSelectedMarker={clearSelectedMarkerForShades} />;
       case 'filter':
-        return <ColorFilter allMarkers={allMarkers} onFilterChange={handleColorFilterChange} />;
-      case 'setFilter': // New case
+        return <ColorFilter allMarkers={markersForColorFilterTool} onFilterChange={handleColorFilterChange} />;
+      case 'setFilter':
         return <SetFilter markerSets={markerSets} onSetSelect={handleSetFilterChange} currentSetId={selectedSetId} />;
       default:
         return <p className="p-4 text-center text-muted-foreground">Select a tool from the menu.</p>;
@@ -129,15 +148,15 @@ export default function OhuhuHarmonyPage() {
     similar: SearchCode,
     shades: Layers,
     filter: ListFilter,
-    setFilter: Tags, // New icon
+    setFilter: Tags,
   };
 
   const toolNames = {
     add: "Add Marker",
     similar: "Similar Colors",
     shades: "Shade Variations",
-    filter: "Filter by Color", // Renamed for clarity
-    setFilter: "Filter by Set", // New name
+    filter: "Filter by Color",
+    setFilter: "Filter by Set",
   };
 
   return (
@@ -150,7 +169,7 @@ export default function OhuhuHarmonyPage() {
           <SidebarContent className="p-0">
             <ScrollArea className="h-full">
               <div className="p-4 space-y-2">
-                {(['add', 'similar', 'shades', 'filter', 'setFilter'] as ActiveTool[]).map(toolKey => { // Added setFilter
+                {(['add', 'similar', 'shades', 'filter', 'setFilter'] as ActiveTool[]).map(toolKey => {
                   if (!toolKey) return null;
                   const Icon = toolIcons[toolKey];
                   const name = toolNames[toolKey];
@@ -162,6 +181,11 @@ export default function OhuhuHarmonyPage() {
                       onClick={() => {
                         setActiveTool(toolKey);
                         if (toolKey !== 'shades') setSelectedMarkerForShades(null);
+                         // If switching to color filter, ensure its base list is up-to-date
+                        if (toolKey === 'filter') {
+                             const currentBaseForColorFilter = selectedSetId ? allMarkers.filter(m => m.setId === selectedSetId) : allMarkers;
+                             setMarkersFilteredByColor(currentBaseForColorFilter);
+                        }
                       }}
                       title={name}
                     >
@@ -188,7 +212,10 @@ export default function OhuhuHarmonyPage() {
                 <PanelLeft />
                 <span className="sr-only">Toggle Sidebar</span>
             </SidebarTrigger>
-            <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">My Marker Palette</h2>
+            <div className="flex items-center">
+              <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">My Marker Palette</h2>
+              <span className="ml-2 text-sm text-muted-foreground">({displayedMarkers.length} marker{displayedMarkers.length === 1 ? '' : 's'})</span>
+            </div>
             <div className="relative ml-auto flex-1 md:grow-0">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input

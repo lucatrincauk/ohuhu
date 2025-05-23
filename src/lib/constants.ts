@@ -3,15 +3,15 @@ import type { Marker, MarkerSet } from './types';
 
 export const INITIAL_MARKER_SETS: MarkerSet[] = [
   { id: 'ohuhu-honolulu-b', name: 'Ohuhu Honolulu B (Brush & Chisel)' },
-  { id: 'ohuhu-kaala', name: 'Ohuhu Kaala (Fine & Chisel)' },
-  { id: 'ohuhu-maui', name: 'Ohuhu Maui (Broad & Fine)' },
-  { id: 'other', name: 'Other/Uncategorized' },
+  // { id: 'ohuhu-kaala', name: 'Ohuhu Kaala (Fine & Chisel)' }, // Removed as per request
+  // { id: 'ohuhu-maui', name: 'Ohuhu Maui (Broad & Fine)' }, // Removed as per request
+  // { id: 'other', name: 'Other/Uncategorized' }, // Removed to focus on the 120 set
 ];
 
 const honolulu120SetMarkers: Marker[] = [
   { id: 'R1', name: 'Carmine', hex: '#D1002C', setId: 'ohuhu-honolulu-b' },
   { id: 'R2', name: 'Scarlet', hex: '#ED1C24', setId: 'ohuhu-honolulu-b' },
-  { id: 'R3', name: 'Rose Red', hex: '#F15A24', setId: 'ohuhu-honolulu-b' }, // Often a bit more pinkish-red
+  { id: 'R3', name: 'Rose Red', hex: '#F15A24', setId: 'ohuhu-honolulu-b' },
   { id: 'R4', name: 'Cherry Pink', hex: '#F26C7D', setId: 'ohuhu-honolulu-b' },
   { id: 'R5', name: 'Coral Pink', hex: '#F69088', setId: 'ohuhu-honolulu-b' },
   { id: 'R6', name: 'Vivid Pink', hex: '#EC008C', setId: 'ohuhu-honolulu-b' },
@@ -33,7 +33,7 @@ const honolulu120SetMarkers: Marker[] = [
   { id: 'R22', name: 'French Vermillion', hex: '#D75032', setId: 'ohuhu-honolulu-b' },
   { id: 'R23', name: 'Orange', hex: '#F7931E', setId: 'ohuhu-honolulu-b' },
   { id: 'R24', name: 'Marigold', hex: '#FBB03B', setId: 'ohuhu-honolulu-b' },
-  { id: 'R25', name: 'Orange Yellow', hex: '#FECF7F', setId: 'ohuhu-honolulu-b' }, // More like a light orange
+  { id: 'R25', name: 'Orange Yellow', hex: '#FECF7F', setId: 'ohuhu-honolulu-b' },
   { id: 'R26', name: 'Pastel Peach', hex: '#FEE1C5', setId: 'ohuhu-honolulu-b' },
   { id: 'R27', name: 'Cadmium Orange', hex: '#F58234', setId: 'ohuhu-honolulu-b' },
   { id: 'R28', name: 'Fruit Pink', hex: '#FFB5A8', setId: 'ohuhu-honolulu-b' },
@@ -54,7 +54,7 @@ const honolulu120SetMarkers: Marker[] = [
   { id: 'Y14', name: 'Pale Cream', hex: '#FFFCE6', setId: 'ohuhu-honolulu-b' },
   { id: 'Y15', name: 'Cadmium Yellow', hex: '#FFEC00', setId: 'ohuhu-honolulu-b' },
   { id: 'YG1', name: 'Yellow Green', hex: '#D0E07A', setId: 'ohuhu-honolulu-b' },
-  { id: 'YG2', name: 'Vivid Green', hex: '#8DC63F', setId: 'ohuhu-honolulu-b' }, // This is actually the official name for G3 Lime Green too in some charts
+  { id: 'YG2', name: 'Vivid Green', hex: '#8DC63F', setId: 'ohuhu-honolulu-b' },
   { id: 'YG3', name: 'Grass Green', hex: '#39B54A', setId: 'ohuhu-honolulu-b' },
   { id: 'YG4', name: 'Mignonette', hex: '#D6E69C', setId: 'ohuhu-honolulu-b' },
   { id: 'YG5', name: 'Chartreuse', hex: '#BADD78', setId: 'ohuhu-honolulu-b' },
@@ -64,7 +64,7 @@ const honolulu120SetMarkers: Marker[] = [
   { id: 'G1', name: 'Emerald Green', hex: '#00A651', setId: 'ohuhu-honolulu-b' },
   { id: 'G2', name: 'Forest Green', hex: '#006837', setId: 'ohuhu-honolulu-b' },
   { id: 'G3', name: 'Lime Green', hex: '#8CC63F', setId: 'ohuhu-honolulu-b' },
-  { id: 'G4', name: 'Turquoise Green', hex: '#00A99D', setId: 'ohuhu-honolulu-b' }, // Ohuhu calls G4 this name often
+  { id: 'G4', name: 'Turquoise Green', hex: '#00A99D', setId: 'ohuhu-honolulu-b' },
   { id: 'G5', name: 'Mint Green Light', hex: '#C0E6B0', setId: 'ohuhu-honolulu-b' },
   { id: 'G6', name: 'Ice Green', hex: '#AFDDCD', setId: 'ohuhu-honolulu-b' },
   { id: 'G7', name: 'Pastel Green', hex: '#97D3A9', setId: 'ohuhu-honolulu-b' },
@@ -117,14 +117,14 @@ const honolulu120SetMarkers: Marker[] = [
   { id: 'E14', name: 'Ochre', hex: '#CC7722', setId: 'ohuhu-honolulu-b' },
   { id: 'E15', name: 'Dark Suntan', hex: '#AD7A50', setId: 'ohuhu-honolulu-b' },
   { id: 'E16', name: 'Light Suntan', hex: '#E3B991', setId: 'ohuhu-honolulu-b' },
-  { id: 'E17', name: 'Powder Pink', hex: '#F9E4D0', setId: 'ohuhu-honolulu-b' }, // Also skin tone
-  { id: 'E18', name: 'Dark Brown', hex: '#8B4513', setId: 'ohuhu-honolulu-b' }, // Existed from previous list
+  { id: 'E17', name: 'Powder Pink', hex: '#F9E4D0', setId: 'ohuhu-honolulu-b' }, 
+  { id: 'E18', name: 'Dark Brown', hex: '#8B4513', setId: 'ohuhu-honolulu-b' }, 
   { id: 'CG0.5', name: 'Cool Grey 0.5', hex: '#F0F0F0', setId: 'ohuhu-honolulu-b' },
   { id: 'CG1', name: 'Cool Grey 1', hex: '#E6E6E6', setId: 'ohuhu-honolulu-b' },
   { id: 'CG2', name: 'Cool Grey 2', hex: '#D9D9D9', setId: 'ohuhu-honolulu-b' },
   { id: 'CG3', name: 'Cool Grey 3', hex: '#CCCCCC', setId: 'ohuhu-honolulu-b' },
   { id: 'CG4', name: 'Cool Grey 4', hex: '#BFBFBF', setId: 'ohuhu-honolulu-b' },
-  { id: 'CG5', name: 'Cool Grey 5', hex: '#A9A9A9', setId: 'ohuhu-honolulu-b' }, // Existed from previous list
+  { id: 'CG5', name: 'Cool Grey 5', hex: '#A9A9A9', setId: 'ohuhu-honolulu-b' }, 
   { id: 'CG6', name: 'Cool Grey 6', hex: '#999999', setId: 'ohuhu-honolulu-b' },
   { id: 'CG7', name: 'Cool Grey 7', hex: '#808080', setId: 'ohuhu-honolulu-b' },
   { id: 'CG8', name: 'Cool Grey 8', hex: '#666666', setId: 'ohuhu-honolulu-b' },
@@ -132,7 +132,7 @@ const honolulu120SetMarkers: Marker[] = [
   { id: 'WG0.5', name: 'Warm Grey 0.5', hex: '#F5F2EE', setId: 'ohuhu-honolulu-b' },
   { id: 'WG1', name: 'Warm Grey 1', hex: '#EAE4DB', setId: 'ohuhu-honolulu-b' },
   { id: 'WG2', name: 'Warm Grey 2', hex: '#DFD8CC', setId: 'ohuhu-honolulu-b' },
-  { id: 'WG3', name: 'Warm Grey 3', hex: '#BCB6AF', setId: 'ohuhu-honolulu-b' }, // Existed from previous list (other)
+  { id: 'WG3', name: 'Warm Grey 3', hex: '#BCB6AF', setId: 'ohuhu-honolulu-b' }, 
   { id: 'WG4', name: 'Warm Grey 4', hex: '#B0A99F', setId: 'ohuhu-honolulu-b' },
   { id: 'WG5', name: 'Warm Grey 5', hex: '#A1988E', setId: 'ohuhu-honolulu-b' },
   { id: 'WG6', name: 'Warm Grey 6', hex: '#91887D', setId: 'ohuhu-honolulu-b' },
@@ -140,18 +140,11 @@ const honolulu120SetMarkers: Marker[] = [
   { id: 'WG8', name: 'Warm Grey 8', hex: '#72695E', setId: 'ohuhu-honolulu-b' },
   { id: 'WG9', name: 'Warm Grey 9', hex: '#625A4F', setId: 'ohuhu-honolulu-b' },
   { id: '120', name: 'Black', hex: '#000000', setId: 'ohuhu-honolulu-b' },
-  { id: '0', name: 'Colorless Blender', hex: '#FFFFFF00', setId: 'ohuhu-honolulu-b' }, // Hex with alpha for blender
+  { id: '0', name: 'Colorless Blender', hex: '#FFFFFF00', setId: 'ohuhu-honolulu-b' },
 ];
 
-export const INITIAL_MARKERS: Marker[] = [
-  // Keep markers from other sets
-  { id: 'B060', name: 'Sky Blue', hex: '#87CEEB', setId: 'ohuhu-kaala' },
-  { id: 'G050', name: 'Mint Green', hex: '#98FF98', setId: 'ohuhu-maui' },
-  { id: 'A59AC4-sample', name: 'App Primary', hex: '#A59AC4', setId: 'other' },
-  { id: '79A3B1-sample', name: 'App Accent', hex: '#79A3B1', setId: 'other' },
-  // Add the full Honolulu 120 set
-  ...honolulu120SetMarkers
-];
+// Only include markers from the Honolulu 120 set.
+export const INITIAL_MARKERS: Marker[] = [...honolulu120SetMarkers];
 
 export const COMMON_COLORS_FILTER = [
   { name: "Red", hexBase: "#FF0000" },
@@ -166,5 +159,3 @@ export const COMMON_COLORS_FILTER = [
   { name: "Black", hexBase: "#000000" },
   { name: "White", hexBase: "#FFFFFF" },
 ];
-
-    
