@@ -16,17 +16,17 @@ export function MarkerCard({ marker, onSelectForShades, onEditMarker }: MarkerCa
     <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
       <CardHeader className="p-0">
         <div
-          className="h-32 w-full"
+          className="h-24 w-full"
           style={{ backgroundColor: marker.hex }}
           aria-label={`Color preview for ${marker.name}`}
         />
       </CardHeader>
-      <CardContent className="flex-grow p-4">
-        <CardTitle className="mb-1 text-lg">{marker.name}</CardTitle>
+      <CardContent className="flex-grow p-3">
+        <CardTitle className="mb-1 text-base">{marker.name}</CardTitle>
         <p className="text-xs text-muted-foreground">ID: {marker.id}</p>
         <p className="text-xs text-muted-foreground">HEX: {marker.hex.toUpperCase()}</p>
       </CardContent>
-      <CardFooter className="p-4 pt-0 flex flex-col space-y-2">
+      <CardFooter className="p-3 pt-0 flex flex-col space-y-2">
         {onSelectForShades && (
           <Button
             variant="outline"
