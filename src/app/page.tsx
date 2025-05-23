@@ -46,6 +46,9 @@ type ActiveSidebarContentType = null;
 
 // Helper functions for color conversion and hue extraction
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  if (!hex) { // Add this check to handle undefined, null, or empty string
+    return null;
+  }
   let normalizedHex = hex.replace(/^#/, '');
   if (normalizedHex.length === 3) {
     normalizedHex = normalizedHex.split('').map(char => char + char).join('');
@@ -475,3 +478,4 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
+
