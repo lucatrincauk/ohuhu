@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent, SheetHeader as UiSheetHeader, SheetTitle as UiSheetTitle } from "@/components/ui/sheet" // Added SheetTitle and SheetHeader for clarity
+import { Sheet, SheetContent, SheetHeader as UiSheetHeader, SheetTitle as UiSheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -200,7 +200,8 @@ const Sidebar = React.forwardRef<
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent
-            aria-labelledby={SIDEBAR_TITLE_ID} // Link to the title
+            // REMOVED: aria-labelledby={SIDEBAR_TITLE_ID} 
+            // Radix DialogContent will find the descendant DialogTitle (SheetTitle in AppLogo)
             data-sidebar="sidebar"
             data-mobile="true"
             className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
@@ -769,4 +770,3 @@ export {
   useSidebar,
   SIDEBAR_TITLE_ID,
 }
-
