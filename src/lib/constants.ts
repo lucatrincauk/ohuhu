@@ -5,24 +5,20 @@ export const INITIAL_MARKER_SETS: MarkerSet[] = [
   { id: 'ohuhu-honolulu-b', name: 'Ohuhu Honolulu 120 Set' },
 ];
 
-// List of 120 marker IDs provided by the user
+// User-provided list of 120 marker IDs for the Ohuhu Honolulu 120 Set
 const userProvidedMarkerIDs: string[] = [
-  'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13',
-  'YR1', 'YR2', 'YR3', 'YR4', 'YR5', 'YR33',
-  'RP1', 'RP6',
-  'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R15', 'R16', 'R17', 'R18', 'R19', 'R20', 'R21', 'R22', 'R23', 'R24', 'R25',
-  'P1', 'P2', 'P3', 'P4', 'P5',
-  'PB1', 'PB2', 'PB3', 'PB4', 'PB5', 'PB6', 'PB7', 'PB8', 'PB9', 'PB10', 'PB11',
-  '120', // Black
-  'BG1', 'BG2', 'BG3', 'BG4', 'BG5', 'BG6', 'BG7', 'BG8', 'BG9', 'BG68', 'BGII03', 'BGII05', 'BGII09',
-  'B64',
-  'BR1', 'BR2', 'BR3',
-  'WG01', 'WG09', 'WG3', 'WG4',
-  'CG2', 'CG5', 'CGII00', 'CGII04', 'CGII07', 'CGII08', 'CGII09',
-  'NG03', 'NG06', 'NG07', 'NG09',
-  'GG1', 'GG3', 'GG5', 'GG9',
-  'GY1', 'GY2', 'GY3', 'GY4', 'GY5', 'GY6', 'GY7', 'GY8', 'GY42', 'GY43', 'GY172', 'GY173',
-  'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'G9'
+  'B64', 'BG1', 'BG2', 'BG3', 'BG4', 'BG5', 'BG6', 'BG7', 'BG8', 'BG9', 'BG68', 
+  'BGII03', 'BGII05', 'BGII09', 'BR1', 'BR2', 'BR3', 'CG2', 'CG5', 'CGII00', 
+  'CGII04', 'CGII07', 'CGII08', 'CGII09', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 
+  'G7', 'G8', 'G9', 'GG1', 'GG3', 'GG5', 'GG9', 'GY1', 'GY2', 'GY3', 'GY4', 
+  'GY5', 'GY6', 'GY7', 'GY8', 'GY42', 'GY43', 'GY172', 'GY173', 'NG03', 'NG06', 
+  'NG07', 'NG09', 'P1', 'P2', 'P3', 'P4', 'P5', 'PB1', 'PB2', 'PB3', 'PB4', 
+  'PB5', 'PB6', 'PB7', 'PB8', 'PB9', 'PB10', 'PB11', 'R1', 'R2', 'R3', 'R4', 
+  'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R15', 
+  'R16', 'R17', 'R18', 'R19', 'R20', 'R21', 'R22', 'R23', 'R24', 'R25', 'RP1', 
+  'RP6', 'WG01', 'WG09', 'WG3', 'WG4', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 
+  'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13', 'YR1', 'YR2', 'YR3', 'YR4', 
+  'YR5', 'YR33', '120'
 ];
 
 // Data for known marker IDs to pull existing names/hex when IDs match.
@@ -71,7 +67,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'YR4': { name: 'Chrome Orange', hex: '#FF8C00' },
   'YR5': { name: 'Dark Yellow', hex: '#FFD700' },
   'YR33': { name: 'Melon Yellow', hex: '#FBC36F' },
-  'RP1': { name: 'Rose Pink', hex: '#FFC0CB' }, // Placeholder, may need specific Rose Pink
+  'RP1': { name: 'Rose Pink', hex: '#FFC0CB' }, 
   'RP6': { name: 'Deep Salmon Pink', hex: '#FF91A4' },
   'P1': { name: 'Lilac', hex: '#C8A2C8' },
   'P2': { name: 'Lavender', hex: '#E6E6FA' },
@@ -151,8 +147,8 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
 
 // Special mapping for user IDs to existing data keys if they differ
 const idMapping: Record<string, string> = {
-   // User WG01 -> My WG01
-  'WG09': 'WG09',
+   // e.g. if user ID 'W01' should map to 'WG01' in existingMarkerData
+   // 'W01': 'WG01' 
 };
 
 
@@ -183,4 +179,3 @@ export const COMMON_COLORS_FILTER = [
   { name: "Black", hexBase: "#000000" },
   { name: "White", hexBase: "#FFFFFF" },
 ];
-
