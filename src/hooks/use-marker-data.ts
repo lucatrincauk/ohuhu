@@ -14,29 +14,22 @@ export function useMarkerData() {
 
   useEffect(() => {
     try {
-      const storedMarkers = localStorage.getItem(MARKERS_STORAGE_KEY);
-      if (storedMarkers) {
-        setMarkers(JSON.parse(storedMarkers));
-      } else {
-        setMarkers(INITIAL_MARKERS);
-        localStorage.setItem(MARKERS_STORAGE_KEY, JSON.stringify(INITIAL_MARKERS));
-      }
+      // Always initialize from constants to ensure the latest code changes are reflected.
+      // This will overwrite any existing markers in local storage with the ones from constants.ts.
+      setMarkers(INITIAL_MARKERS);
+      localStorage.setItem(MARKERS_STORAGE_KEY, JSON.stringify(INITIAL_MARKERS));
 
-      const storedSets = localStorage.getItem(SETS_STORAGE_KEY);
-      if (storedSets) {
-        setMarkerSets(JSON.parse(storedSets));
-      } else {
-        setMarkerSets(INITIAL_MARKER_SETS);
-        localStorage.setItem(SETS_STORAGE_KEY, JSON.stringify(INITIAL_MARKER_SETS));
-      }
+      // Do the same for marker sets for consistency.
+      setMarkerSets(INITIAL_MARKER_SETS);
+      localStorage.setItem(SETS_STORAGE_KEY, JSON.stringify(INITIAL_MARKER_SETS));
     } catch (error) {
-      console.error("Failed to access localStorage or parse data:", error);
-      // Fallback to initial data if localStorage is unavailable or corrupt
+      console.error("Failed to access localStorage or write initial data:", error);
+      // Fallback if localStorage operations fail, though setMarkers/setMarkerSets should still populate state.
       setMarkers(INITIAL_MARKERS);
       setMarkerSets(INITIAL_MARKER_SETS);
     }
     setIsInitialized(true);
-  }, []);
+  }, []); // Empty dependency array ensures this runs once on mount after initial render.
 
   const updateLocalStorage = useCallback((key: string, data: any) => {
     try {
@@ -47,10 +40,11 @@ export function useMarkerData() {
   }, []);
 
   const addMarker = useCallback((newMarker: Omit<Marker, 'id'> & { id?: string }) => {
-    // Allow providing an ID, or generate one. For Ohuhu, users likely enter the marker's actual code.
     const markerWithId: Marker = { ...newMarker, id: newMarker.id || `custom-${Date.now()}` };
     setMarkers(prevMarkers => {
       const updatedMarkers = [...prevMarkers, markerWithId];
+      // Markers added during the session will be saved to local storage,
+      // but will be overwritten by INITIAL_MARKERS on the next full app load due to the useEffect logic.
       updateLocalStorage(MARKERS_STORAGE_KEY, updatedMarkers);
       return updatedMarkers;
     });
@@ -64,6 +58,7 @@ export function useMarkerData() {
     const setWithId: MarkerSet = { ...newSet, id: newSet.id || `set-${Date.now()}` };
     setMarkerSets(prevSets => {
       const updatedSets = [...prevSets, setWithId];
+      // Similar to addMarker, changes to sets will be session-specific.
       updateLocalStorage(SETS_STORAGE_KEY, updatedSets);
       return updatedSets;
     });
