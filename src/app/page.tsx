@@ -31,6 +31,69 @@ import { useToast } from '@/hooks/use-toast';
 
 type ActiveTool = 'add' | 'similar' | 'shades' | 'filter' | 'setFilter' | null;
 
+// Helper functions for color conversion and hue extraction
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  let normalizedHex = hex.replace(/^#/, '');
+  if (normalizedHex.length === 3) {
+    normalizedHex = normalizedHex.split('').map(char => char + char).join('');
+  }
+  if (normalizedHex.length !== 6) {
+    return null; // Invalid hex length
+  }
+  const num = parseInt(normalizedHex, 16);
+  if (isNaN(num)) {
+    return null; // Invalid hex characters
+  }
+  return {
+    r: (num >> 16) & 0xFF,
+    g: (num >>  8) & 0xFF,
+    b: (num >>  0) & 0xFF,
+  };
+}
+
+function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0; // achromatic
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return { h: h * 360, s, l };
+}
+
+function getHueFromHex(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 361; // Place invalid colors last or handle as error (using 361 to sort them after 0-360 hues)
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  // For greyscale colors (saturation is 0), hue is often 0.
+  // To group them, we can check saturation or lightness.
+  // For simple hue sort, hsl.h is fine.
+  // If saturation is very low, consider it greyscale and give a high hue or special value
+  if (hsl.s < 0.05) { // low saturation, likely grey/white/black
+    // Sort greys by lightness: darker greys first (lower lightness value)
+    // To make them sort after colors, we can add a large offset to hue, then use lightness.
+    // E.g., hue = 360 + hsl.l * 100 (scales lightness to 0-100 for secondary sort key)
+    // For now, just use raw hue.
+    return hsl.h;
+  }
+  return hsl.h;
+}
+
+
 export default function OhuhuHarmonyPage() {
   const { markers: allMarkers, markerSets, addMarker, updateMarker, isInitialized } = useMarkerData();
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
@@ -62,7 +125,6 @@ export default function OhuhuHarmonyPage() {
     const isColorFilterToolActive = markersFilteredByColor.length < allMarkers.length || (activeTool === 'filter' && markersFilteredByColor.length !== allMarkers.filter(m => selectedSetId ? m.setId === selectedSetId : true).length);
 
     if (isColorFilterToolActive) {
-      // If color filter is active, ensure it's applied based on the current set filter scope
       const baseForColor = selectedSetId ? allMarkers.filter(m => m.setId === selectedSetId) : allMarkers;
       if(markersFilteredByColor.length < baseForColor.length) {
         const colorFilteredIds = new Set(markersFilteredByColor.map(m => m.id));
@@ -80,6 +142,36 @@ export default function OhuhuHarmonyPage() {
           marker.hex.toLowerCase().includes(lowerSearchTerm)
       );
     }
+
+    // 4. Sort by Hue
+    tempResults.sort((a, b) => {
+      const hueA = getHueFromHex(a.hex);
+      const hueB = getHueFromHex(b.hex);
+      
+      // Primary sort by hue
+      if (hueA !== hueB) {
+        return hueA - hueB;
+      }
+      
+      // Secondary sort for greyscale/low saturation: by lightness (darker first)
+      // This helps if many colors have hue 0 (e.g. greys, some reds)
+      const rgbA = hexToRgb(a.hex);
+      const rgbB = hexToRgb(b.hex);
+      if (rgbA && rgbB) {
+        const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
+        const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
+        if (hslA.s < 0.1 && hslB.s < 0.1) { // If both are greyscale-ish
+            return hslA.l - hslB.l; // Sort by lightness
+        }
+        // If only one is greyscale, it might have hue 0. 
+        // The primary hue sort should handle distinct non-greys correctly.
+        // Potentially, sort greys after colors:
+        // if (hslA.s < 0.1 && hslB.s >= 0.1) return 1; // A is grey, B is color, A comes after
+        // if (hslA.s >= 0.1 && hslB.s < 0.1) return -1; // A is color, B is grey, A comes before
+      }
+      return 0;
+    });
+    
     setDisplayedMarkers(tempResults);
 
   }, [searchTerm, markersFilteredByColor, selectedSetId, allMarkers, isInitialized, activeTool]);
