@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -20,26 +21,43 @@ import { useMarkerData } from '@/hooks/use-marker-data';
 import type { Marker } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 type ActiveTool = 'add' | 'similar' | 'shades' | 'filter' | null;
 
 export default function OhuhuHarmonyPage() {
-  const { markers: allMarkers, markerSets, addMarker, isInitialized, getMarkerById, setMarkers: setDisplayedMarkersHook } = useMarkerData();
+  const { markers: allMarkers, markerSets, addMarker, isInitialized } = useMarkerData();
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
+  const [markersFilteredByColor, setMarkersFilteredByColor] = useState<Marker[]>([]);
   const [activeTool, setActiveTool] = useState<ActiveTool>('add');
   const [selectedMarkerForShades, setSelectedMarkerForShades] = useState<Marker | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   useEffect(() => {
     if (isInitialized) {
-      setDisplayedMarkers(allMarkers);
+      setMarkersFilteredByColor(allMarkers); // Initialize with all markers
     }
   }, [allMarkers, isInitialized]);
 
-  const handleFilterChange = (filteredMarkers: Marker[]) => {
-    setDisplayedMarkers(filteredMarkers);
+  useEffect(() => {
+    let results = markersFilteredByColor;
+    if (searchTerm.trim() !== '') {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      results = results.filter(
+        (marker) =>
+          marker.name.toLowerCase().includes(lowerSearchTerm) ||
+          marker.id.toLowerCase().includes(lowerSearchTerm) ||
+          marker.hex.toLowerCase().includes(lowerSearchTerm)
+      );
+    }
+    setDisplayedMarkers(results);
+  }, [searchTerm, markersFilteredByColor]);
+
+  const handleFilterChange = (filteredMarkersFromColorTool: Marker[]) => {
+    setMarkersFilteredByColor(filteredMarkersFromColorTool);
   };
 
   const handleSelectMarkerForShades = (marker: Marker) => {
@@ -137,7 +155,17 @@ export default function OhuhuHarmonyPage() {
                 <PanelLeft />
                 <span className="sr-only">Toggle Sidebar</span>
             </SidebarTrigger>
-            <h2 className="text-lg font-semibold text-foreground">My Marker Palette</h2>
+            <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">My Marker Palette</h2>
+            <div className="relative ml-auto flex-1 md:grow-0">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search markers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg bg-card pl-8 md:w-[200px] lg:w-[320px]"
+              />
+            </div>
           </header>
           <main className="flex-1 overflow-auto">
              <MarkerGrid markers={displayedMarkers} onSelectMarkerForShades={handleSelectMarkerForShades} />
