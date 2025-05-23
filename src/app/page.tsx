@@ -17,21 +17,23 @@ import { MarkerGrid } from '@/components/markers/marker-grid';
 import { SimilarColorFinder } from '@/components/tools/similar-color-finder';
 import { ShadeVariationGenerator } from '@/components/tools/shade-variation-generator';
 import { ColorFilter } from '@/components/filters/color-filter';
+import { SetFilter } from '@/components/filters/set-filter'; // New Import
 import { useMarkerData } from '@/hooks/use-marker-data';
 import type { Marker } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search } from 'lucide-react';
+import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search, Tags } from 'lucide-react'; // Added Tags
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 
-type ActiveTool = 'add' | 'similar' | 'shades' | 'filter' | null;
+type ActiveTool = 'add' | 'similar' | 'shades' | 'filter' | 'setFilter' | null; // Added setFilter
 
 export default function OhuhuHarmonyPage() {
   const { markers: allMarkers, markerSets, addMarker, isInitialized } = useMarkerData();
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
   const [markersFilteredByColor, setMarkersFilteredByColor] = useState<Marker[]>([]);
+  const [selectedSetId, setSelectedSetId] = useState<string | null>(null); // New state for set filter
   const [activeTool, setActiveTool] = useState<ActiveTool>('add');
   const [selectedMarkerForShades, setSelectedMarkerForShades] = useState<Marker | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -43,26 +45,53 @@ export default function OhuhuHarmonyPage() {
   }, [allMarkers, isInitialized]);
 
   useEffect(() => {
-    let results = markersFilteredByColor;
+    if (!isInitialized) return;
+
+    let tempResults = [...allMarkers];
+
+    // 1. Apply Set Filter
+    if (selectedSetId) {
+      tempResults = tempResults.filter(marker => marker.setId === selectedSetId);
+    }
+
+    // 2. Apply Color Category Filter (using the list from ColorFilter tool)
+    // markersFilteredByColor holds the markers filtered by the ColorFilter component.
+    // If ColorFilter hasn't effectively filtered (i.e., it's showing all markers it received, or all markers if it's reset),
+    // its output list (markersFilteredByColor) will be equivalent to what it was given.
+    // A simple check is if its length is less than allMarkers.length, indicating it has filtered.
+    const isColorFilterToolActive = markersFilteredByColor.length < allMarkers.length;
+    if (isColorFilterToolActive) {
+      // We need markers that are in tempResults AND in markersFilteredByColor
+      const colorFilteredIds = new Set(markersFilteredByColor.map(m => m.id));
+      tempResults = tempResults.filter(marker => colorFilteredIds.has(marker.id));
+    }
+    
+    // 3. Apply Search Term
     if (searchTerm.trim() !== '') {
       const lowerSearchTerm = searchTerm.toLowerCase();
-      results = results.filter(
+      tempResults = tempResults.filter(
         (marker) =>
           marker.name.toLowerCase().includes(lowerSearchTerm) ||
           marker.id.toLowerCase().includes(lowerSearchTerm) ||
           marker.hex.toLowerCase().includes(lowerSearchTerm)
       );
     }
-    setDisplayedMarkers(results);
-  }, [searchTerm, markersFilteredByColor]);
+    setDisplayedMarkers(tempResults);
 
-  const handleFilterChange = (filteredMarkersFromColorTool: Marker[]) => {
+  }, [searchTerm, markersFilteredByColor, selectedSetId, allMarkers, isInitialized]);
+
+
+  const handleColorFilterChange = (filteredMarkersFromColorTool: Marker[]) => {
     setMarkersFilteredByColor(filteredMarkersFromColorTool);
+  };
+
+  const handleSetFilterChange = (setId: string | null) => {
+    setSelectedSetId(setId);
   };
 
   const handleSelectMarkerForShades = (marker: Marker) => {
     setSelectedMarkerForShades(marker);
-    setActiveTool('shades'); // Switch to shades tool when a marker is selected from grid
+    setActiveTool('shades');
   };
   
   const clearSelectedMarkerForShades = () => {
@@ -87,7 +116,9 @@ export default function OhuhuHarmonyPage() {
       case 'shades':
         return <ShadeVariationGenerator inventory={allMarkers} selectedMarkerForShades={selectedMarkerForShades} onClearSelectedMarker={clearSelectedMarkerForShades} />;
       case 'filter':
-        return <ColorFilter allMarkers={allMarkers} onFilterChange={handleFilterChange} />;
+        return <ColorFilter allMarkers={allMarkers} onFilterChange={handleColorFilterChange} />;
+      case 'setFilter': // New case
+        return <SetFilter markerSets={markerSets} onSetSelect={handleSetFilterChange} currentSetId={selectedSetId} />;
       default:
         return <p className="p-4 text-center text-muted-foreground">Select a tool from the menu.</p>;
     }
@@ -98,13 +129,15 @@ export default function OhuhuHarmonyPage() {
     similar: SearchCode,
     shades: Layers,
     filter: ListFilter,
+    setFilter: Tags, // New icon
   };
 
   const toolNames = {
     add: "Add Marker",
     similar: "Similar Colors",
     shades: "Shade Variations",
-    filter: "Filter Colors",
+    filter: "Filter by Color", // Renamed for clarity
+    setFilter: "Filter by Set", // New name
   };
 
   return (
@@ -117,7 +150,7 @@ export default function OhuhuHarmonyPage() {
           <SidebarContent className="p-0">
             <ScrollArea className="h-full">
               <div className="p-4 space-y-2">
-                {(['add', 'similar', 'shades', 'filter'] as ActiveTool[]).map(toolKey => {
+                {(['add', 'similar', 'shades', 'filter', 'setFilter'] as ActiveTool[]).map(toolKey => { // Added setFilter
                   if (!toolKey) return null;
                   const Icon = toolIcons[toolKey];
                   const name = toolNames[toolKey];
@@ -128,7 +161,7 @@ export default function OhuhuHarmonyPage() {
                       className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
                       onClick={() => {
                         setActiveTool(toolKey);
-                        if (toolKey !== 'shades') setSelectedMarkerForShades(null); // Clear selection if not shades tool
+                        if (toolKey !== 'shades') setSelectedMarkerForShades(null);
                       }}
                       title={name}
                     >
