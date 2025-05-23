@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateShadeVariations, type GenerateShadeVariationsInput, type GenerateShadeVariationsOutput } from '@/ai/flows/shade-variation-generator';
+import { generateShadeVariations, type GenerateShadeVariationsInput, type GenerateShadeVariationsOutput, type ShadeVariationResult } from '@/ai/flows/shade-variation-generator';
 import { useToast } from '@/hooks/use-toast';
 import type { Marker } from '@/lib/types';
 import { ColorSwatch } from '@/components/core/color-swatch';
@@ -24,7 +25,7 @@ const hexColorRegex = /^#([0-9A-Fa-f]{3}){1,2}$/;
 export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, onClearSelectedMarker }: ShadeVariationGeneratorProps) {
   const [baseColor, setBaseColor] = useState<string>('');
   const [numShades, setNumShades] = useState<number>(5);
-  const [generatedShades, setGeneratedShades] = useState<string[]>([]);
+  const [generatedShades, setGeneratedShades] = useState<ShadeVariationResult[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [previewColor, setPreviewColor] = useState<string>('transparent');
   const { toast } = useToast();
@@ -52,18 +53,39 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
       });
       return;
     }
+    if (inventory.length === 0) {
+      toast({
+        title: 'Empty Inventory',
+        description: 'Your marker inventory is empty. Add some markers first.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsLoading(true);
     setGeneratedShades([]);
 
+    const markerInventoryForAI = inventory.map(m => ({
+      id: m.id,
+      name: m.name,
+      hex: m.hex,
+    }));
+
     const input: GenerateShadeVariationsInput = {
       hexColor: baseColor,
       numShades: numShades,
+      markerInventory: markerInventoryForAI,
     };
 
     try {
       const result = await generateShadeVariations(input);
       setGeneratedShades(result.shades);
+      if (!result.shades || result.shades.length === 0) {
+        toast({
+          title: 'No Variations Found',
+          description: 'Could not find suitable shade variations in your inventory for this color.',
+        });
+      }
     } catch (error) {
       console.error('Error generating shades:', error);
       toast({
@@ -80,11 +102,17 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     const selected = inventory.find(m => m.id === markerId);
     if (selected) {
       setBaseColor(selected.hex);
+      // If the selected marker for shades was set via prop, clear it
+      // so direct selection takes over.
+      if (onClearSelectedMarker && selectedMarkerForShades && selectedMarkerForShades.id !== markerId) {
+        onClearSelectedMarker();
+      }
     }
   };
   
   const handleClearSelection = () => {
     setBaseColor('');
+    setGeneratedShades([]); // Clear results when base color is cleared
     if (onClearSelectedMarker) onClearSelectedMarker();
   };
 
@@ -96,14 +124,18 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
           <Layers className="h-6 w-6 text-primary" />
           <CardTitle>Shade Variation Generator</CardTitle>
         </div>
-        <CardDescription>Generate lighter and darker shades from a base color.</CardDescription>
+        <CardDescription>Select markers from your inventory that are lighter or darker variations of a base color.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium">Base Color</label>
           <div className="flex items-center gap-2">
-            <Select onValueChange={handleMarkerSelect} value={inventory.find(m => m.hex === baseColor)?.id || ""}>
-              <SelectTrigger className="flex-grow" disabled={isLoading}>
+            <Select 
+              onValueChange={handleMarkerSelect} 
+              value={inventory.find(m => m.hex.toLowerCase() === baseColor.toLowerCase())?.id || ""} // Match ignoring case for hex
+              disabled={isLoading}
+            >
+              <SelectTrigger className="flex-grow">
                 <SelectValue placeholder="Select from inventory" />
               </SelectTrigger>
               <SelectContent>
@@ -148,7 +180,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
           />
         </div>
 
-        <Button onClick={handleGenerateShades} disabled={isLoading || !baseColor} className="w-full">
+        <Button onClick={handleGenerateShades} disabled={isLoading || !baseColor || inventory.length === 0} className="w-full">
           {isLoading ? (
             <>
               <Palette className="mr-2 h-4 w-4 animate-pulse" />
@@ -157,36 +189,48 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
           ) : (
             <>
               <Palette className="mr-2 h-4 w-4" />
-              Generate Shades
+              Suggest Shades from Inventory
             </>
           )}
         </Button>
 
         {isLoading && (
-          <div className="mt-4 flex flex-wrap gap-2 justify-center">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {[...Array(numShades)].map((_, i) => (
-               <Skeleton key={i} className="h-12 w-12 rounded-md" />
+              <div key={i} className="p-2 border rounded-md space-y-1 bg-muted/30">
+                <Skeleton className="h-10 w-10 rounded-md" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
             ))}
           </div>
         )}
 
         {!isLoading && generatedShades.length > 0 && (
           <div className="mt-4 space-y-2">
-            <h4 className="font-semibold">Generated Shades:</h4>
-            <div className="flex flex-wrap gap-2 justify-center p-2 border rounded-md bg-muted/30">
-              {generatedShades.map((shade, index) => (
-                <ColorSwatch 
-                  key={index} 
-                  hexColor={shade} 
-                  size="md"
-                  className="transition-transform hover:scale-110"
+            <h4 className="font-semibold">Suggested Shades from Your Inventory:</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {generatedShades.map((marker, index) => (
+                <Card 
+                  key={marker.id + '-' + index} // Ensure unique key if same marker appears multiple times
+                  className="flex flex-col items-center p-2 text-center transition-transform hover:scale-105 cursor-pointer shadow-sm"
                   onClick={() => {
-                    navigator.clipboard.writeText(shade);
-                    toast({ title: "Copied!", description: `${shade} copied to clipboard.` });
+                    navigator.clipboard.writeText(marker.hex);
+                    toast({ title: "Copied!", description: `${marker.hex} (${marker.name}) copied to clipboard.` });
                   }}
                 >
-                   <span className="text-xs font-mono mix-blend-difference text-white p-1 rounded-sm bg-black/30">{shade.toUpperCase()}</span>
-                </ColorSwatch>
+                  <ColorSwatch 
+                    hexColor={marker.hex} 
+                    size="md"
+                    className="mb-1"
+                  />
+                  <p className="text-xs font-semibold truncate w-full" title={marker.name}>{marker.name}</p>
+                  <p className="text-xs text-muted-foreground">({marker.id})</p>
+                  <p className="text-xs text-muted-foreground">{marker.hex.toUpperCase()}</p>
+                  {marker.similarityScore !== undefined && (
+                    <p className="text-xs text-primary/80">Score: {(marker.similarityScore * 100).toFixed(0)}%</p>
+                  )}
+                </Card>
               ))}
             </div>
           </div>
