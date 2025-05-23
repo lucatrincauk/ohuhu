@@ -18,9 +18,6 @@ import type { AddMarkerFormValues } from '@/components/markers/add-marker-form';
 import { MarkerGrid } from '@/components/markers/marker-grid';
 import { SimilarColorFinder } from '@/components/tools/similar-color-finder';
 import { ShadeVariationGenerator } from '@/components/tools/shade-variation-generator';
-// ColorFilter component is no longer used for UI, but isColorInCategory might be sourced or moved.
-// import { ColorFilter } from '@/components/filters/color-filter';
-import { SetFilter } from '@/components/filters/set-filter';
 import { EditMarkerDialog } from '@/components/markers/edit-marker-dialog';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import type { Marker } from '@/lib/types';
@@ -45,7 +42,7 @@ import { ColorSwatch } from '@/components/core/color-swatch';
 
 
 type ActivePageContentType = 'palette' | 'add' | 'similar' | 'shades';
-type ActiveSidebarContentType = 'setFilter' | null; // 'filter' removed
+type ActiveSidebarContentType = null; // 'setFilter' and 'colorFilter' removed
 
 // Helper functions for color conversion and hue extraction
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -77,7 +74,7 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
   const l = (max + min) / 2;
 
   if (max === min) {
-    h = s = 0; 
+    h = s = 0;
   } else {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -93,10 +90,10 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
 
 function getHueFromHex(hex: string): number {
   const rgb = hexToRgb(hex);
-  if (!rgb) return 361; 
+  if (!rgb) return 361;
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-  if (hsl.s < 0.05) { 
-    return hsl.h + 360 + (1-hsl.l) * 100; 
+  if (hsl.s < 0.05) {
+    return hsl.h + 360 + (1-hsl.l) * 100;
   }
   return hsl.h;
 }
@@ -112,10 +109,10 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
   const maxMarker = Math.max(mr, mg, mb);
   const minMarker = Math.min(mr, mg, mb);
 
-  if (categoryHex === "#808080" || categoryHex === "#000000" || categoryHex === "#FFFFFF") { 
+  if (categoryHex === "#808080" || categoryHex === "#000000" || categoryHex === "#FFFFFF") {
      const luminance = 0.2126 * mr + 0.7152 * mg + 0.0722 * mb;
      const hslMarker = rgbToHsl(mr, mg, mb); // Use rgbToHsl from page.tsx for saturation
-     const saturation = hslMarker.s; 
+     const saturation = hslMarker.s;
 
      if (categoryHex === "#000000") return luminance < 50 && saturation < 0.15;
      if (categoryHex === "#FFFFFF") return luminance > 220 && saturation < 0.15;
@@ -123,7 +120,7 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
   }
 
   const {r: cr, g: cg, b: cb} = categoryRgb;
-  
+
   // Calculate HSL for both colors for more accurate comparison
   const markerHsl = rgbToHsl(mr, mg, mb);
   const categoryHsl = rgbToHsl(cr, cg, cb);
@@ -172,10 +169,10 @@ export default function OhuhuHarmonyPage() {
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
   const [selectedColorCategory, setSelectedColorCategory] = useState<{ name: string; hex: string } | null>(null);
-  
+
   const [activePageContent, setActivePageContent] = useState<ActivePageContentType>('palette');
   const [activeSidebarContent, setActiveSidebarContent] = useState<ActiveSidebarContentType>(null);
-  
+
   const [selectedMarkerForShades, setSelectedMarkerForShades] = useState<Marker | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [editingMarker, setEditingMarker] = useState<Marker | null>(null);
@@ -190,14 +187,14 @@ export default function OhuhuHarmonyPage() {
     if (selectedSetId) {
       tempResults = tempResults.filter(marker => marker.setId === selectedSetId);
     }
-    
+
     // 2. Filter by Color Category (new logic)
     if (selectedColorCategory) {
-      tempResults = tempResults.filter(marker => 
+      tempResults = tempResults.filter(marker =>
         isColorInCategory(marker.hex, selectedColorCategory.hex)
       );
     }
-    
+
     // 3. Filter by Search Term (only when palette is active)
     if (searchTerm.trim() !== '' && activePageContent === 'palette') {
       const lowerSearchTerm = searchTerm.toLowerCase();
@@ -214,7 +211,7 @@ export default function OhuhuHarmonyPage() {
       const hueA = getHueFromHex(a.hex);
       const hueB = getHueFromHex(b.hex);
       if (hueA !== hueB) return hueA - hueB;
-      
+
       const rgbA = hexToRgb(a.hex);
       const rgbB = hexToRgb(b.hex);
       if (rgbA && rgbB) {
@@ -228,7 +225,7 @@ export default function OhuhuHarmonyPage() {
       }
       return 0;
     });
-    
+
     setDisplayedMarkers(tempResults);
 
   }, [searchTerm, selectedColorCategory, selectedSetId, allMarkers, isInitialized, activePageContent]);
@@ -236,9 +233,8 @@ export default function OhuhuHarmonyPage() {
 
   const handleSetFilterChange = (setId: string | null) => {
     setSelectedSetId(setId);
-    // When set filter changes, clear color category filter to avoid empty results
-    // if the color category doesn't exist in the new set.
-    setSelectedColorCategory(null); 
+    // When set filter changes, clear color category filter as well
+    setSelectedColorCategory(null);
   };
 
   const handleColorCategorySelect = (category: { name: string; hex: string } | null) => {
@@ -254,7 +250,7 @@ export default function OhuhuHarmonyPage() {
     setActivePageContent('shades');
     setActiveSidebarContent(null);
   };
-  
+
   const clearSelectedMarkerForShades = () => {
     setSelectedMarkerForShades(null);
   }
@@ -278,7 +274,7 @@ export default function OhuhuHarmonyPage() {
 
   const handleAddMarkerAndReturnToPalette = (markerData: AddMarkerFormValues) => {
     addMarker(markerData);
-    setActivePageContent('palette'); 
+    setActivePageContent('palette');
     setActiveSidebarContent(null);
   };
 
@@ -295,10 +291,10 @@ export default function OhuhuHarmonyPage() {
   const renderMainPageContent = () => {
     switch (activePageContent) {
       case 'palette':
-        return <MarkerGrid 
-                  markers={displayedMarkers} 
+        return <MarkerGrid
+                  markers={displayedMarkers}
                   onSelectMarkerForShades={handleSelectMarkerForShades}
-                  onEditMarker={handleOpenEditDialog} 
+                  onEditMarker={handleOpenEditDialog}
                 />;
       case 'add':
         return <div className="p-4 md:p-6 max-w-2xl mx-auto"><AddMarkerForm markerSets={markerSets} onAddMarker={handleAddMarkerAndReturnToPalette} /></div>;
@@ -307,44 +303,33 @@ export default function OhuhuHarmonyPage() {
       case 'shades':
         return <div className="p-4 md:p-6 max-w-2xl mx-auto"><ShadeVariationGenerator inventory={allMarkers} selectedMarkerForShades={selectedMarkerForShades} onClearSelectedMarker={clearSelectedMarkerForShades} /></div>;
       default:
-        return <MarkerGrid 
-                  markers={displayedMarkers} 
+        return <MarkerGrid
+                  markers={displayedMarkers}
                   onSelectMarkerForShades={handleSelectMarkerForShades}
-                  onEditMarker={handleOpenEditDialog} 
+                  onEditMarker={handleOpenEditDialog}
                 />;
     }
   };
-  
+
   const renderSidebarWidget = () => {
-    switch (activeSidebarContent) {
-      case 'setFilter':
-        return <SetFilter markerSets={markerSets} onSetSelect={handleSetFilterChange} currentSetId={selectedSetId} />;
-      default:
-        return <p className="p-4 text-center text-sm text-muted-foreground">Select a filter tool above, or navigate using the main panel tools.</p>;
-    }
+    // Sidebar widgets are no longer used for filters
+    return <p className="p-4 text-center text-sm text-muted-foreground">Select a tool or navigate using the main panel.</p>;
   };
 
   interface SidebarButtonConfig {
-    id: ActivePageContentType | ActiveSidebarContentType | 'view_palette';
+    id: ActivePageContentType | 'view_palette'; // No sidebar-specific content types anymore
     name: string;
     Icon: LucideIcon;
     action: () => void;
-    type: 'main' | 'sidebarWidget' | 'navigation';
+    type: 'main' | 'navigation'; // Only main content or navigation
   }
-  
+
   const sidebarButtons: SidebarButtonConfig[] = [
     { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: () => { setActivePageContent('palette'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
     { id: 'add', name: "Add Marker", Icon: PlusSquare, type: 'main', action: () => { setActivePageContent('add'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
     { id: 'similar', name: "Similar Colors", Icon: SearchCode, type: 'main', action: () => { setActivePageContent('similar'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
     { id: 'shades', name: "Shade Variations", Icon: Layers, type: 'main', action: () => { setActivePageContent('shades'); setActiveSidebarContent(null); setSearchTerm(''); }},
-    // "Filter by Color" button removed from here
-    { id: 'setFilter', name: "Filter by Set", Icon: Tags, type: 'sidebarWidget', action: () => { 
-        setActivePageContent('palette'); 
-        setActiveSidebarContent('setFilter'); 
-        setSelectedMarkerForShades(null); 
-        setSearchTerm('');
-        // setSelectedColorCategory(null); // Keep color filter if user is just opening set filter
-      }},
+    // "Filter by Set" and "Filter by Color" buttons removed from here
   ];
 
   const getHeaderTitle = () => {
@@ -352,7 +337,7 @@ export default function OhuhuHarmonyPage() {
     const activeButton = sidebarButtons.find(btn => btn.id === activePageContent);
     return activeButton ? activeButton.name : "Ohuhu Harmony";
   };
-  
+
   const isPaletteView = activePageContent === 'palette';
 
 
@@ -370,10 +355,9 @@ export default function OhuhuHarmonyPage() {
                   <Button
                     key={button.id}
                     variant={
-                      (activePageContent === button.id && button.type === 'main') || 
-                      (activeSidebarContent === button.id && button.type === 'sidebarWidget') ||
-                      (activePageContent === 'palette' && button.id === 'view_palette') 
-                      ? 'default' 
+                      (activePageContent === button.id && button.type === 'main') ||
+                      (activePageContent === 'palette' && button.id === 'view_palette')
+                      ? 'default'
                       : 'ghost'
                     }
                     className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
@@ -397,58 +381,21 @@ export default function OhuhuHarmonyPage() {
         </Sidebar>
 
         <SidebarInset className="flex-1 bg-background flex flex-col">
-          <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
-            <SidebarTrigger className="md:hidden">
-                <PanelLeft />
-                <span className="sr-only">Toggle Sidebar</span>
-            </SidebarTrigger>
-            <div className="flex items-center">
-              <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">{getHeaderTitle()}</h2>
-              {isPaletteView && (
-                <span className="ml-2 text-sm text-muted-foreground">({displayedMarkers.length} marker{displayedMarkers.length === 1 ? '' : 's'})</span>
-              )}
-            </div>
-            
-            <div className="ml-auto flex items-center gap-2">
-              {isPaletteView && (
-                <>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-8 gap-1">
-                        <ListFilter className="h-3.5 w-3.5" />
-                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                          {selectedColorCategory ? `Color: ${selectedColorCategory.name}` : "Filter Color"}
-                        </span>
-                        <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Filter by color category</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {COMMON_COLORS_FILTER.map((color) => (
-                        <DropdownMenuCheckboxItem
-                          key={color.name}
-                          checked={selectedColorCategory?.name === color.name}
-                          onSelect={(event) => {
-                             event.preventDefault(); // Prevent menu closing immediately for checkbox
-                             handleColorCategorySelect(selectedColorCategory?.name === color.name ? null : color);
-                          }}
-                        >
-                          <ColorSwatch hexColor={color.hexBase} size="sm" className="mr-2 border-none shadow-none"/>
-                          {color.name}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                      {selectedColorCategory && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onSelect={() => handleColorCategorySelect(null)}>
-                            Clear Color Filter
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
+          <header className="sticky top-0 z-10 flex h-auto flex-col gap-2 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 py-3">
+            {/* Row 1: Title and Search */}
+            <div className="flex h-10 items-center">
+              <SidebarTrigger className="md:hidden mr-2">
+                  <PanelLeft />
+                  <span className="sr-only">Toggle Sidebar</span>
+              </SidebarTrigger>
+              <div className="flex items-center">
+                <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">{getHeaderTitle()}</h2>
+                {isPaletteView && (
+                  <span className="ml-2 text-sm text-muted-foreground">({displayedMarkers.length} marker{displayedMarkers.length === 1 ? '' : 's'})</span>
+                )}
+              </div>
+              <div className="ml-auto flex items-center">
+                {isPaletteView && (
                   <div className="relative flex-1 md:grow-0 max-w-xs">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -459,9 +406,89 @@ export default function OhuhuHarmonyPage() {
                       className="w-full rounded-lg bg-card pl-8 md:w-[200px] lg:w-[320px]"
                     />
                   </div>
-                </>
-              )}
+                )}
+              </div>
             </div>
+
+            {/* Row 2: Filters (only if palette view) */}
+            {isPaletteView && (
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 gap-1">
+                      <ListFilter className="h-3.5 w-3.5" />
+                      <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                        {selectedColorCategory ? `Color: ${selectedColorCategory.name}` : "Filter Color"}
+                      </span>
+                      <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Filter by color category</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {COMMON_COLORS_FILTER.map((color) => (
+                      <DropdownMenuCheckboxItem
+                        key={color.name}
+                        checked={selectedColorCategory?.name === color.name}
+                        onSelect={(event) => {
+                           event.preventDefault();
+                           handleColorCategorySelect(selectedColorCategory?.name === color.name ? null : color);
+                        }}
+                      >
+                        <ColorSwatch hexColor={color.hexBase} size="sm" className="mr-2 border-none shadow-none"/>
+                        {color.name}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                    {selectedColorCategory && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => handleColorCategorySelect(null)}>
+                          Clear Color Filter
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 gap-1">
+                      <Tags className="h-3.5 w-3.5" />
+                      <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                        {selectedSetId ? `Set: ${markerSets.find(s => s.id === selectedSetId)?.name || 'Unknown'}` : "Filter Set"}
+                      </span>
+                      <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Filter by marker set</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuCheckboxItem
+                      checked={!selectedSetId}
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        handleSetFilterChange(null);
+                      }}
+                    >
+                      All Sets
+                    </DropdownMenuCheckboxItem>
+                    {markerSets.map((set) => (
+                      <DropdownMenuCheckboxItem
+                        key={set.id}
+                        checked={selectedSetId === set.id}
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          // Toggle behavior: if current set is clicked, clear filter by selecting "All Sets" equivalent
+                          handleSetFilterChange(selectedSetId === set.id ? null : set.id);
+                        }}
+                      >
+                        {set.name}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
           </header>
           <main className="flex-1 overflow-auto">
              {renderMainPageContent()}
@@ -479,6 +506,3 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
-
-
-    
