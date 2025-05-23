@@ -27,17 +27,6 @@ const honolulu120SetMarkers: Marker[] = [
   { id: 'R16', name: 'Lipstick Red', hex: '#BD1030', setId: 'ohuhu-honolulu-b' },
   { id: 'R17', name: 'Pastel Pink', hex: '#FEEFED', setId: 'ohuhu-honolulu-b' },
   { id: 'R18', name: 'Salmon Pink', hex: '#FF8988', setId: 'ohuhu-honolulu-b' },
-  { id: 'R19', name: 'Reddish Orange', hex: '#FF5600', setId: 'ohuhu-honolulu-b' },
-  { id: 'R20', name: 'Light Orange', hex: '#FFD099', setId: 'ohuhu-honolulu-b' },
-  { id: 'R21', name: 'Terra Cotta', hex: '#E47A44', setId: 'ohuhu-honolulu-b' },
-  { id: 'R22', name: 'French Vermillion', hex: '#D75032', setId: 'ohuhu-honolulu-b' },
-  { id: 'R23', name: 'Orange', hex: '#F7931E', setId: 'ohuhu-honolulu-b' },
-  { id: 'R24', name: 'Marigold', hex: '#FBB03B', setId: 'ohuhu-honolulu-b' },
-  { id: 'R25', name: 'Orange Yellow', hex: '#FECF7F', setId: 'ohuhu-honolulu-b' },
-  { id: 'R26', name: 'Pastel Peach', hex: '#FEE1C5', setId: 'ohuhu-honolulu-b' },
-  { id: 'R27', name: 'Cadmium Orange', hex: '#F58234', setId: 'ohuhu-honolulu-b' },
-  { id: 'R28', name: 'Fruit Pink', hex: '#FFB5A8', setId: 'ohuhu-honolulu-b' },
-  { id: 'R29', name: 'Barely Beige', hex: '#FFEFE1', setId: 'ohuhu-honolulu-b' },
   { id: 'Y1', name: 'Lemon Yellow', hex: '#FFF500', setId: 'ohuhu-honolulu-b' },
   { id: 'Y2', name: 'Canary Yellow', hex: '#FFEE00', setId: 'ohuhu-honolulu-b' },
   { id: 'Y3', name: 'Yellow', hex: '#FFDD00', setId: 'ohuhu-honolulu-b' },
@@ -159,3 +148,4 @@ export const COMMON_COLORS_FILTER = [
   { name: "Black", hexBase: "#000000" },
   { name: "White", hexBase: "#FFFFFF" },
 ];
+
