@@ -12,6 +12,7 @@ import { ColorSwatch } from '@/components/core/color-swatch';
 import { Sparkles, SearchCode } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SimilarColorFinderProps {
   inventory: Marker[];
@@ -111,14 +112,14 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium">Target Color</label>
+          <label htmlFor="similarColorInventorySelect" className="text-sm font-medium">Target Color</label>
           <div className="flex items-center gap-2">
             <Select
               onValueChange={handleMarkerSelect}
               value={inventory.find(m => m.hex.toLowerCase() === targetColor.toLowerCase())?.id || ""}
               disabled={isLoading}
             >
-              <SelectTrigger className="flex-grow-[2]"> {/* Give more space to select */}
+              <SelectTrigger id="similarColorInventorySelect" className="flex-grow">
                 <SelectValue placeholder="Select from inventory" />
               </SelectTrigger>
               <SelectContent>
@@ -144,6 +145,18 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
               placeholder="Or enter #RRGGBB"
               className="flex-grow"
               disabled={isLoading}
+              aria-label="Target color hex input"
+            />
+            <input
+              type="color"
+              value={hexColorRegex.test(targetColor) ? targetColor : '#000000'} // Default to black if targetColor is not a valid hex
+              onChange={(e) => {
+                setTargetColor(e.target.value.toUpperCase());
+              }}
+              disabled={isLoading}
+              className="h-10 w-10 p-1 border rounded-md cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+              title="Pick a color"
+              aria-label="Pick a color"
             />
             <ColorSwatch hexColor={previewColor} size="md" />
           </div>
@@ -208,3 +221,4 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
     </Card>
   );
 }
+
