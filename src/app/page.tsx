@@ -42,7 +42,7 @@ import { ColorSwatch } from '@/components/core/color-swatch';
 
 
 type ActivePageContentType = 'palette' | 'add' | 'similar' | 'shades';
-type ActiveSidebarContentType = null; // 'setFilter' and 'colorFilter' removed
+type ActiveSidebarContentType = null;
 
 // Helper functions for color conversion and hue extraction
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -90,28 +90,27 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
 
 function getHueFromHex(hex: string): number {
   const rgb = hexToRgb(hex);
-  if (!rgb) return 361;
+  if (!rgb) return 361; // Default for invalid hex, sorts after valid hues
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-  if (hsl.s < 0.05) {
-    return hsl.h + 360 + (1-hsl.l) * 100;
+  // For greyscale colors (low saturation), group them by lightness after chromatic colors
+  if (hsl.s < 0.1) { // Low saturation threshold for greyscale
+    return 360 + (1 - hsl.l) * 100; // Sort greys by lightness (dark to light)
   }
   return hsl.h;
 }
 
 // Moved from color-filter.tsx and adapted to use hexToRgb from this file
 function isColorInCategory(markerHex: string, categoryHex: string): boolean {
-  const markerRgb = hexToRgb(markerHex); // Uses hexToRgb from page.tsx
-  const categoryRgb = hexToRgb(categoryHex); // Uses hexToRgb from page.tsx
+  const markerRgb = hexToRgb(markerHex);
+  const categoryRgb = hexToRgb(categoryHex);
 
   if (!markerRgb || !categoryRgb) return false;
 
   const {r: mr, g: mg, b: mb} = markerRgb;
-  const maxMarker = Math.max(mr, mg, mb);
-  const minMarker = Math.min(mr, mg, mb);
 
   if (categoryHex === "#808080" || categoryHex === "#000000" || categoryHex === "#FFFFFF") {
      const luminance = 0.2126 * mr + 0.7152 * mg + 0.0722 * mb;
-     const hslMarker = rgbToHsl(mr, mg, mb); // Use rgbToHsl from page.tsx for saturation
+     const hslMarker = rgbToHsl(mr, mg, mb);
      const saturation = hslMarker.s;
 
      if (categoryHex === "#000000") return luminance < 50 && saturation < 0.15;
@@ -121,18 +120,10 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
 
   const {r: cr, g: cg, b: cb} = categoryRgb;
 
-  // Calculate HSL for both colors for more accurate comparison
   const markerHsl = rgbToHsl(mr, mg, mb);
   const categoryHsl = rgbToHsl(cr, cg, cb);
 
-  // Hue difference (circular)
-  let hueDiff = Math.abs(markerHsl.h - categoryHsl.h);
-  if (hueDiff > 180) hueDiff = 360 - hueDiff;
-
-  // Check if hue is within a threshold (e.g., 30 degrees for broad categories)
-  // and saturation is above a minimum (to distinguish from greys)
-  const hueThreshold = 30; // Adjust as needed
-  const saturationThreshold = 0.15; // Marker must have some color
+  const saturationThreshold = 0.15;
 
   if (categoryHex === "#FF0000") { // Red
     return (markerHsl.h < 15 || markerHsl.h >= 345) && markerHsl.s > saturationThreshold;
@@ -152,14 +143,16 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
   if (categoryHex === "#800080") { // Purple
     return (markerHsl.h >= 255 && markerHsl.h < 315) && markerHsl.s > saturationThreshold;
   }
-  if (categoryHex === "#FFC0CB") { // Pink (treat as light red/magenta)
+  if (categoryHex === "#FFC0CB") { // Pink
     return ((markerHsl.h >= 315 && markerHsl.h < 345) || (markerHsl.h < 15 && markerHsl.l > 0.6)) && markerHsl.s > saturationThreshold;
   }
-   if (categoryHex === "#A52A2A") { // Brown (low saturation orange/red)
+   if (categoryHex === "#A52A2A") { // Brown
     return ((markerHsl.h >= 0 && markerHsl.h < 45) || (markerHsl.h >=340 && markerHsl.h <=360))  && markerHsl.s > 0.1 && markerHsl.s < 0.6 && markerHsl.l < 0.6 && markerHsl.l > 0.1;
   }
 
-  // Fallback for less distinct categories using the general hue difference
+  let hueDiff = Math.abs(markerHsl.h - categoryHsl.h);
+  if (hueDiff > 180) hueDiff = 360 - hueDiff;
+  const hueThreshold = 30;
   return hueDiff <= hueThreshold && markerHsl.s > saturationThreshold;
 }
 
@@ -183,19 +176,16 @@ export default function OhuhuHarmonyPage() {
 
     let tempResults = [...allMarkers];
 
-    // 1. Filter by Set
     if (selectedSetId) {
       tempResults = tempResults.filter(marker => marker.setId === selectedSetId);
     }
 
-    // 2. Filter by Color Category (new logic)
     if (selectedColorCategory) {
       tempResults = tempResults.filter(marker =>
         isColorInCategory(marker.hex, selectedColorCategory.hex)
       );
     }
 
-    // 3. Filter by Search Term (only when palette is active)
     if (searchTerm.trim() !== '' && activePageContent === 'palette') {
       const lowerSearchTerm = searchTerm.toLowerCase();
       tempResults = tempResults.filter(
@@ -206,24 +196,10 @@ export default function OhuhuHarmonyPage() {
       );
     }
 
-    // 4. Sort
     tempResults.sort((a, b) => {
       const hueA = getHueFromHex(a.hex);
       const hueB = getHueFromHex(b.hex);
-      if (hueA !== hueB) return hueA - hueB;
-
-      const rgbA = hexToRgb(a.hex);
-      const rgbB = hexToRgb(b.hex);
-      if (rgbA && rgbB) {
-        const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
-        const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
-        if (hslA.s < 0.1 && hslB.s < 0.1) return hslA.l - hslB.l;
-        if (Math.abs(hslA.h - hslB.h) < 5) {
-            if(Math.abs(hslA.s - hslB.s) > 0.05) return hslA.s - hslB.s;
-            return hslA.l - hslB.l;
-        }
-      }
-      return 0;
+      return hueA - hueB;
     });
 
     setDisplayedMarkers(tempResults);
@@ -233,13 +209,12 @@ export default function OhuhuHarmonyPage() {
 
   const handleSetFilterChange = (setId: string | null) => {
     setSelectedSetId(setId);
-    // When set filter changes, clear color category filter as well
-    setSelectedColorCategory(null);
+    // setSelectedColorCategory(null); // Optionally clear color filter when set changes
   };
 
   const handleColorCategorySelect = (category: { name: string; hex: string } | null) => {
     if (selectedColorCategory?.name === category?.name) {
-      setSelectedColorCategory(null); // Toggle off if same category is clicked
+      setSelectedColorCategory(null);
     } else {
       setSelectedColorCategory(category);
     }
@@ -312,16 +287,15 @@ export default function OhuhuHarmonyPage() {
   };
 
   const renderSidebarWidget = () => {
-    // Sidebar widgets are no longer used for filters
     return <p className="p-4 text-center text-sm text-muted-foreground">Select a tool or navigate using the main panel.</p>;
   };
 
   interface SidebarButtonConfig {
-    id: ActivePageContentType | 'view_palette'; // No sidebar-specific content types anymore
+    id: ActivePageContentType | 'view_palette';
     name: string;
     Icon: LucideIcon;
     action: () => void;
-    type: 'main' | 'navigation'; // Only main content or navigation
+    type: 'main' | 'navigation';
   }
 
   const sidebarButtons: SidebarButtonConfig[] = [
@@ -329,7 +303,6 @@ export default function OhuhuHarmonyPage() {
     { id: 'add', name: "Add Marker", Icon: PlusSquare, type: 'main', action: () => { setActivePageContent('add'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
     { id: 'similar', name: "Similar Colors", Icon: SearchCode, type: 'main', action: () => { setActivePageContent('similar'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
     { id: 'shades', name: "Shade Variations", Icon: Layers, type: 'main', action: () => { setActivePageContent('shades'); setActiveSidebarContent(null); setSearchTerm(''); }},
-    // "Filter by Set" and "Filter by Color" buttons removed from here
   ];
 
   const getHeaderTitle = () => {
@@ -382,7 +355,7 @@ export default function OhuhuHarmonyPage() {
 
         <SidebarInset className="flex-1 bg-background flex flex-col">
           <header className="sticky top-0 z-10 flex h-auto flex-col gap-2 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 py-3">
-            {/* Row 1: Title and Search */}
+            {/* Row 1: Title and Sidebar Trigger */}
             <div className="flex h-10 items-center">
               <SidebarTrigger className="md:hidden mr-2">
                   <PanelLeft />
@@ -394,23 +367,9 @@ export default function OhuhuHarmonyPage() {
                   <span className="ml-2 text-sm text-muted-foreground">({displayedMarkers.length} marker{displayedMarkers.length === 1 ? '' : 's'})</span>
                 )}
               </div>
-              <div className="ml-auto flex items-center">
-                {isPaletteView && (
-                  <div className="relative flex-1 md:grow-0 max-w-xs">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Search markers..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full rounded-lg bg-card pl-8 md:w-[200px] lg:w-[320px]"
-                    />
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Row 2: Filters (only if palette view) */}
+            {/* Row 2: Filters and Search (only if palette view) */}
             {isPaletteView && (
               <div className="flex items-center gap-2">
                 <DropdownMenu>
@@ -478,7 +437,6 @@ export default function OhuhuHarmonyPage() {
                         checked={selectedSetId === set.id}
                         onSelect={(event) => {
                           event.preventDefault();
-                          // Toggle behavior: if current set is clicked, clear filter by selecting "All Sets" equivalent
                           handleSetFilterChange(selectedSetId === set.id ? null : set.id);
                         }}
                       >
@@ -487,6 +445,17 @@ export default function OhuhuHarmonyPage() {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                
+                <div className="relative flex-1 md:grow-0 max-w-xs ml-auto">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search markers..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full rounded-lg bg-card pl-8 md:w-[200px] lg:w-[320px]"
+                  />
+                </div>
               </div>
             )}
           </header>
