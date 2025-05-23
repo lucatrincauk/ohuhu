@@ -197,12 +197,6 @@ const Sidebar = React.forwardRef<
     }
 
     if (isMobile) {
-      // The children of Sidebar typically contain SidebarHeader -> AppLogo.
-      // We need to ensure AppLogo's h1 gets the ID SIDEBAR_TITLE_ID.
-      // This is done by passing the id to SidebarHeader -> AppLogo from page.tsx
-      // or by modifying AppLogo to have a fixed ID for this specific usage if it's simpler.
-      // For now, we assume AppLogo's h1 will have the ID SIDEBAR_TITLE_ID.
-      // This ID is applied in app-logo.tsx
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent
@@ -365,17 +359,6 @@ const SidebarHeader = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & { children?: React.ReactNode }
 >(({ className, children, ...props }, ref) => {
-  // Check if children contains AppLogo and inject the ID
-  const childrenWithId = React.Children.map(children, child => {
-    if (React.isValidElement(child) && (child.type as any)?.displayName === 'AppLogo') {
-      return React.cloneElement(child as React.ReactElement<any>, { id: SIDEBAR_TITLE_ID });
-    }
-    if (React.isValidElement(child) && typeof child.type === 'function' && child.type.name === 'AppLogo') {
-       return React.cloneElement(child as React.ReactElement<any>, { id: SIDEBAR_TITLE_ID });
-    }
-    return child;
-  });
-
   return (
     <div
       ref={ref}
@@ -383,7 +366,7 @@ const SidebarHeader = React.forwardRef<
       className={cn("flex flex-col gap-2 p-2", className)}
       {...props}
     >
-      {childrenWithId}
+      {children}
     </div>
   )
 })
@@ -786,3 +769,4 @@ export {
   useSidebar,
   SIDEBAR_TITLE_ID,
 }
+
