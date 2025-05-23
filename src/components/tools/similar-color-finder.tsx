@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -10,6 +11,7 @@ import type { Marker, MarkerInventoryItem } from '@/lib/types';
 import { ColorSwatch } from '@/components/core/color-swatch';
 import { Sparkles, SearchCode } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface SimilarColorFinderProps {
   inventory: Marker[];
@@ -36,7 +38,7 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
     if (!hexColorRegex.test(targetColor)) {
       toast({
         title: 'Invalid Color',
-        description: 'Please enter a valid hex color code (e.g., #RRGGBB).',
+        description: 'Please enter or select a valid hex color code (e.g., #RRGGBB).',
         variant: 'destructive',
       });
       return;
@@ -86,6 +88,18 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
     }
   };
 
+  const handleMarkerSelect = (markerId: string) => {
+    const selected = inventory.find(m => m.id === markerId);
+    if (selected) {
+      setTargetColor(selected.hex);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setTargetColor('');
+    setSimilarColors([]);
+  };
+
   return (
     <Card className="shadow-sm bg-card">
       <CardHeader>
@@ -97,20 +111,44 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor="targetColorInput" className="text-sm font-medium">Target Color (Hex)</label>
+          <label className="text-sm font-medium">Target Color</label>
+          <div className="flex items-center gap-2">
+            <Select
+              onValueChange={handleMarkerSelect}
+              value={inventory.find(m => m.hex.toLowerCase() === targetColor.toLowerCase())?.id || ""}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="flex-grow-[2]"> {/* Give more space to select */}
+                <SelectValue placeholder="Select from inventory" />
+              </SelectTrigger>
+              <SelectContent>
+                {inventory.map(marker => (
+                  <SelectItem key={marker.id} value={marker.id}>
+                    <div className="flex items-center gap-2">
+                      <ColorSwatch hexColor={marker.hex} size="sm" />
+                      {marker.name} ({marker.id})
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {targetColor && (
+              <Button variant="ghost" size="sm" onClick={handleClearSelection} disabled={isLoading}>Clear</Button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Input
               id="targetColorInput"
               value={targetColor}
               onChange={(e) => setTargetColor(e.target.value)}
-              placeholder="#A59AC4"
+              placeholder="Or enter #RRGGBB"
               className="flex-grow"
               disabled={isLoading}
             />
             <ColorSwatch hexColor={previewColor} size="md" />
           </div>
         </div>
-        <Button onClick={handleFindSimilar} disabled={isLoading || !targetColor} className="w-full">
+        <Button onClick={handleFindSimilar} disabled={isLoading || !targetColor || inventory.length === 0} className="w-full">
           {isLoading ? (
             <>
               <Sparkles className="mr-2 h-4 w-4 animate-spin" />
@@ -141,19 +179,29 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
         {!isLoading && similarColors.length > 0 && (
           <div className="mt-4 space-y-2">
             <h4 className="font-semibold">Results:</h4>
-            <ul className="max-h-60 overflow-y-auto space-y-2 pr-1">
-              {similarColors.map((marker) => (
-                <li key={marker.id} className="flex items-center justify-between p-2 border rounded-md hover:bg-accent/50 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <ColorSwatch hexColor={marker.hex} size="sm" />
-                    <div>
-                      <p className="text-sm font-medium">{marker.name} ({marker.id})</p>
-                      <p className="text-xs text-muted-foreground">Similarity: {(marker.similarityScore * 100).toFixed(0)}%</p>
+            <ScrollArea className="max-h-60">
+              <ul className="space-y-2 pr-1">
+                {similarColors.map((marker) => (
+                  <li 
+                    key={marker.id} 
+                    className="flex items-center justify-between p-2 border rounded-md hover:bg-accent/10 transition-colors cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(marker.hex);
+                      toast({ title: "Copied!", description: `${marker.hex} (${marker.name}) copied to clipboard.` });
+                    }}
+                    title={`Click to copy ${marker.hex}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ColorSwatch hexColor={marker.hex} size="sm" />
+                      <div>
+                        <p className="text-sm font-medium">{marker.name} ({marker.id})</p>
+                        <p className="text-xs text-muted-foreground">Similarity: {(marker.similarityScore * 100).toFixed(0)}%</p>
+                      </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
           </div>
         )}
       </CardContent>

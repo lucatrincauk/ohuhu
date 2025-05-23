@@ -142,12 +142,20 @@ export default function OhuhuHarmonyPage() {
       const hueA = getHueFromHex(a.hex);
       const hueB = getHueFromHex(b.hex);
       if (hueA !== hueB) return hueA - hueB;
+      
+      // If hues are the same (especially for greys or very similar colors), sort by lightness
       const rgbA = hexToRgb(a.hex);
       const rgbB = hexToRgb(b.hex);
       if (rgbA && rgbB) {
         const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
         const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
+         // For greys/low saturation, sort by lightness
         if (hslA.s < 0.1 && hslB.s < 0.1) return hslA.l - hslB.l;
+        // For colors with similar hue, sort by saturation then lightness
+        if (Math.abs(hslA.h - hslB.h) < 5) { // within 5 degrees of hue
+            if(Math.abs(hslA.s - hslB.s) > 0.05) return hslA.s - hslB.s;
+            return hslA.l - hslB.l;
+        }
       }
       return 0;
     });
@@ -163,7 +171,7 @@ export default function OhuhuHarmonyPage() {
         baseMarkersForColorFilter = allMarkers.filter(marker => marker.setId === selectedSetId);
     }
     
-    if (filteredMarkersFromColorTool.length <= baseMarkersForColorFilter.length) { // Use <= to allow empty filter results
+    if (filteredMarkersFromColorTool.length <= baseMarkersForColorFilter.length) { 
          setMarkersFilteredByColor(filteredMarkersFromColorTool);
     } else {
         setMarkersFilteredByColor(baseMarkersForColorFilter);
@@ -173,6 +181,7 @@ export default function OhuhuHarmonyPage() {
   const handleSetFilterChange = (setId: string | null) => {
     setSelectedSetId(setId);
     const newBaseForColorFilter = setId ? allMarkers.filter(marker => marker.setId === setId) : allMarkers;
+    // Reset color filter when set changes to avoid showing empty if color filter doesn't match new set
     setMarkersFilteredByColor(newBaseForColorFilter); 
   };
 
@@ -205,7 +214,7 @@ export default function OhuhuHarmonyPage() {
 
   const handleAddMarkerAndReturnToPalette = (markerData: AddMarkerFormValues) => {
     addMarker(markerData);
-    setActivePageContent('palette'); // Return to palette view
+    setActivePageContent('palette'); 
     setActiveSidebarContent(null);
   };
 
@@ -228,11 +237,11 @@ export default function OhuhuHarmonyPage() {
                   onEditMarker={handleOpenEditDialog} 
                 />;
       case 'add':
-        return <div className="p-4 md:p-6"><AddMarkerForm markerSets={markerSets} onAddMarker={handleAddMarkerAndReturnToPalette} /></div>;
+        return <div className="p-4 md:p-6 max-w-2xl mx-auto"><AddMarkerForm markerSets={markerSets} onAddMarker={handleAddMarkerAndReturnToPalette} /></div>;
       case 'similar':
-        return <div className="p-4 md:p-6"><SimilarColorFinder inventory={allMarkers} /></div>;
+        return <div className="p-4 md:p-6 max-w-2xl mx-auto"><SimilarColorFinder inventory={allMarkers} /></div>;
       case 'shades':
-        return <div className="p-4 md:p-6"><ShadeVariationGenerator inventory={allMarkers} selectedMarkerForShades={selectedMarkerForShades} onClearSelectedMarker={clearSelectedMarkerForShades} /></div>;
+        return <div className="p-4 md:p-6 max-w-2xl mx-auto"><ShadeVariationGenerator inventory={allMarkers} selectedMarkerForShades={selectedMarkerForShades} onClearSelectedMarker={clearSelectedMarkerForShades} /></div>;
       default:
         return <MarkerGrid 
                   markers={displayedMarkers} 
@@ -253,7 +262,7 @@ export default function OhuhuHarmonyPage() {
       case 'setFilter':
         return <SetFilter markerSets={markerSets} onSetSelect={handleSetFilterChange} currentSetId={selectedSetId} />;
       default:
-        return <p className="p-4 text-center text-sm text-muted-foreground">Select a filter above, or view tools in the main panel.</p>;
+        return <p className="p-4 text-center text-sm text-muted-foreground">Select a filter tool above, or navigate using the main panel tools.</p>;
     }
   };
 
@@ -266,21 +275,23 @@ export default function OhuhuHarmonyPage() {
   }
   
   const sidebarButtons: SidebarButtonConfig[] = [
-    { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: () => { setActivePageContent('palette'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); }},
-    { id: 'add', name: "Add Marker", Icon: PlusSquare, type: 'main', action: () => { setActivePageContent('add'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); }},
-    { id: 'similar', name: "Similar Colors", Icon: SearchCode, type: 'main', action: () => { setActivePageContent('similar'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); }},
-    { id: 'shades', name: "Shade Variations", Icon: Layers, type: 'main', action: () => { setActivePageContent('shades'); setActiveSidebarContent(null); /* Preserve selectedMarkerForShades if 'shades' is re-clicked, or rely on card click */ }},
+    { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: () => { setActivePageContent('palette'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
+    { id: 'add', name: "Add Marker", Icon: PlusSquare, type: 'main', action: () => { setActivePageContent('add'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
+    { id: 'similar', name: "Similar Colors", Icon: SearchCode, type: 'main', action: () => { setActivePageContent('similar'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
+    { id: 'shades', name: "Shade Variations", Icon: Layers, type: 'main', action: () => { setActivePageContent('shades'); setActiveSidebarContent(null); /* setSelectedMarkerForShades is preserved if already set, or user clicks card */ setSearchTerm(''); }},
     { id: 'filter', name: "Filter by Color", Icon: ListFilter, type: 'sidebarWidget', action: () => { 
         setActivePageContent('palette'); 
         setActiveSidebarContent('filter'); 
         setSelectedMarkerForShades(null);
         const currentBaseForColorFilter = selectedSetId ? allMarkers.filter(m => m.setId === selectedSetId) : allMarkers;
-        setMarkersFilteredByColor(currentBaseForColorFilter);
+        setMarkersFilteredByColor(currentBaseForColorFilter); // Reset color filter to base on activating tool
+        setSearchTerm('');
       }},
     { id: 'setFilter', name: "Filter by Set", Icon: Tags, type: 'sidebarWidget', action: () => { 
         setActivePageContent('palette'); 
         setActiveSidebarContent('setFilter'); 
         setSelectedMarkerForShades(null); 
+        setSearchTerm('');
       }},
   ];
 
@@ -374,4 +385,3 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
-
