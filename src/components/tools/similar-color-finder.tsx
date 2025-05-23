@@ -24,16 +24,9 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
   const [targetColor, setTargetColor] = useState<string>('');
   const [similarColors, setSimilarColors] = useState<FindSimilarColorsOutput>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [previewColor, setPreviewColor] = useState<string>('transparent');
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (hexColorRegex.test(targetColor)) {
-      setPreviewColor(targetColor);
-    } else {
-      setPreviewColor('transparent');
-    }
-  }, [targetColor]);
+  // previewColor state and its useEffect are removed as per user request
 
   const handleFindSimilar = async () => {
     if (!hexColorRegex.test(targetColor)) {
@@ -141,7 +134,7 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
             <Input
               id="targetColorInput"
               value={targetColor}
-              onChange={(e) => setTargetColor(e.target.value)}
+              onChange={(e) => setTargetColor(e.target.value.toUpperCase())}
               placeholder="Or enter #RRGGBB"
               className="flex-grow"
               disabled={isLoading}
@@ -158,7 +151,7 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
               title="Pick a color"
               aria-label="Pick a color"
             />
-            <ColorSwatch hexColor={previewColor} size="md" />
+            {/* Redundant ColorSwatch removed here */}
           </div>
         </div>
         <Button onClick={handleFindSimilar} disabled={isLoading || !targetColor || inventory.length === 0} className="w-full">
@@ -221,4 +214,3 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
     </Card>
   );
 }
-
