@@ -1,12 +1,14 @@
+
 import type { Marker } from '@/lib/types';
 import { MarkerCard } from './marker-card';
 
 interface MarkerGridProps {
   markers: Marker[];
   onSelectMarkerForShades?: (marker: Marker) => void;
+  onEditMarker?: (marker: Marker) => void;
 }
 
-export function MarkerGrid({ markers, onSelectMarkerForShades }: MarkerGridProps) {
+export function MarkerGrid({ markers, onSelectMarkerForShades, onEditMarker }: MarkerGridProps) {
   if (!markers || markers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -20,7 +22,12 @@ export function MarkerGrid({ markers, onSelectMarkerForShades }: MarkerGridProps
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-4 md:p-6">
       {markers.map((marker) => (
-        <MarkerCard key={marker.id} marker={marker} onSelectForShades={onSelectMarkerForShades} />
+        <MarkerCard 
+          key={marker.id} 
+          marker={marker} 
+          onSelectForShades={onSelectMarkerForShades}
+          onEditMarker={onEditMarker} 
+        />
       ))}
     </div>
   );

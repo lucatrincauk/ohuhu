@@ -1,15 +1,17 @@
+
 import type { Marker } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ColorSwatch } from '@/components/core/color-swatch';
 import { Button } from '@/components/ui/button';
-import { Palette } from 'lucide-react';
+import { Palette, Pencil } from 'lucide-react';
 
 interface MarkerCardProps {
   marker: Marker;
   onSelectForShades?: (marker: Marker) => void;
+  onEditMarker?: (marker: Marker) => void;
 }
 
-export function MarkerCard({ marker, onSelectForShades }: MarkerCardProps) {
+export function MarkerCard({ marker, onSelectForShades, onEditMarker }: MarkerCardProps) {
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
       <CardHeader className="p-0">
@@ -24,7 +26,7 @@ export function MarkerCard({ marker, onSelectForShades }: MarkerCardProps) {
         <p className="text-xs text-muted-foreground">ID: {marker.id}</p>
         <p className="text-xs text-muted-foreground">HEX: {marker.hex.toUpperCase()}</p>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="p-4 pt-0 flex flex-col space-y-2">
         {onSelectForShades && (
           <Button
             variant="outline"
@@ -35,6 +37,18 @@ export function MarkerCard({ marker, onSelectForShades }: MarkerCardProps) {
           >
             <Palette className="mr-2 h-4 w-4" />
             Shades
+          </Button>
+        )}
+        {onEditMarker && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => onEditMarker(marker)}
+            aria-label={`Edit ${marker.name}`}
+          >
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit
           </Button>
         )}
       </CardFooter>

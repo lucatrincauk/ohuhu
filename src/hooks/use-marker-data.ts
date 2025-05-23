@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Marker, MarkerSet } from '@/lib/types';
@@ -50,6 +51,16 @@ export function useMarkerData() {
     });
   }, [updateLocalStorage]);
   
+  const updateMarker = useCallback((markerId: string, updates: Partial<Omit<Marker, 'id'>>) => {
+    setMarkers(prevMarkers => {
+      const updatedMarkers = prevMarkers.map(marker =>
+        marker.id === markerId ? { ...marker, ...updates } : marker
+      );
+      updateLocalStorage(MARKERS_STORAGE_KEY, updatedMarkers);
+      return updatedMarkers;
+    });
+  }, [updateLocalStorage]);
+
   const getMarkerById = useCallback((id: string): Marker | undefined => {
     return markers.find(marker => marker.id === id);
   }, [markers]);
@@ -69,6 +80,7 @@ export function useMarkerData() {
     markerSets,
     addMarker,
     addMarkerSet,
+    updateMarker,
     getMarkerById,
     isInitialized,
     setMarkers // For filtering purposes
