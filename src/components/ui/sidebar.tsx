@@ -200,8 +200,7 @@ const Sidebar = React.forwardRef<
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent
-            // REMOVED: aria-labelledby={SIDEBAR_TITLE_ID} 
-            // Radix DialogContent will find the descendant DialogTitle (SheetTitle in AppLogo)
+            aria-labelledby={SIDEBAR_TITLE_ID}
             data-sidebar="sidebar"
             data-mobile="true"
             className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
