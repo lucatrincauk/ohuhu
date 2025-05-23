@@ -3,10 +3,11 @@ import type { Marker, MarkerSet } from './types';
 
 export const INITIAL_MARKER_SETS: MarkerSet[] = [
   { id: 'ohuhu-honolulu-b', name: 'Ohuhu Honolulu 120 Set' },
+  { id: 'ohuhu-104', name: 'Ohuhu 104 Set' },
 ];
 
 // User-provided list of 120 marker IDs for the Ohuhu Honolulu 120 Set
-const userProvidedMarkerIDs: string[] = [
+const honolulu120MarkerIDs: string[] = [
   'B64', 'BG1', 'BG2', 'BG3', 'BG4', 'BG5', 'BG6', 'BG7', 'BG8', 'BG9', 'BG68', 
   'BGII03', 'BGII05', 'BGII09', 'BR1', 'BR2', 'BR3', 'CG2', 'CG5', 'CGII00', 
   'CGII04', 'CGII07', 'CGII08', 'CGII09', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 
@@ -19,6 +20,21 @@ const userProvidedMarkerIDs: string[] = [
   'RP6', 'WG01', 'WG09', 'WG3', 'WG4', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6', 
   'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13', 'YR1', 'YR2', 'YR3', 'YR4', 
   'YR5', 'YR33', '120'
+];
+
+// User-provided list of 104 marker IDs for the Ohuhu 104 Set
+const ohuhu104MarkerIDs: string[] = [
+  'B080', 'B090', 'B110', 'B180', 'B190', 'B270', 'B440', 'BG060', 'BR208', 'CG030',
+  'E010', 'E030', 'E080', 'E120', 'E130', 'E160', 'E260', 'E370', 'E430', 'E432',
+  'E434', 'E450', 'E460', 'FY010', 'FY020', 'FY030', 'FY050', 'G030', 'G050', 'G080',
+  'G110', 'G130', 'G260', 'G270', 'G300', 'G320', 'G322', 'G324', 'G326', 'G330',
+  'G390', 'G410', 'G470', 'G490', 'G500', 'GG040', 'GG110', 'MG030', 'MG100', 'R29',
+  'R050', 'R070', 'R150', 'R170', 'R180', 'R190', 'R230', 'R240', 'R242', 'R270',
+  'R282', 'R284', 'R290', 'R340', 'R350', 'RG050', 'RG080', 'RV010', 'RV100', 'RV130',
+  'RV240', 'RV250', 'RV300', 'RV330', 'RV350', 'V050', 'V070', 'V080', 'V150', 'V210',
+  'V320', 'V322', 'V330', 'V340', 'V390', 'V450', 'WG070', 'WG090', 'WG130', 'Y010',
+  'Y040', 'Y070', 'Y080', 'Y110', 'Y121', 'Y130', 'Y140', 'Y180', 'Y210', 'Y250',
+  'YR090', 'YR172', 'YR180', 'YR220'
 ];
 
 // Data for known marker IDs to pull existing names/hex when IDs match.
@@ -143,6 +159,9 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'G7': { name: 'Pastel Green', hex: '#97D3A9' },
   'G8': { name: 'Apple Green', hex: '#64A541' },
   'G9': { name: 'Peacock Green', hex: '#00806E' },
+  // Adding some specific IDs from the 104 set to existingMarkerData for better names/colors if available
+  'R29': { name: 'Rose Mist', hex: '#F0A8AE' }, // Example, actual hex may vary
+  'Y121': { name: 'Pale Yellow', hex: '#FFFACD' }, // Example
 };
 
 // Special mapping for user IDs to existing data keys if they differ
@@ -151,20 +170,30 @@ const idMapping: Record<string, string> = {
    // 'W01': 'WG01' 
 };
 
-
-const honolulu120SetMarkers: Marker[] = userProvidedMarkerIDs.map(id => {
-  const effectiveId = idMapping[id] || id; // Use mapped ID if one exists
+const honolulu120SetMarkers: Marker[] = honolulu120MarkerIDs.map(id => {
+  const effectiveId = idMapping[id] || id;
   const knownData = existingMarkerData[effectiveId];
 
   if (knownData) {
     return { id, name: knownData.name, hex: knownData.hex, setId: 'ohuhu-honolulu-b' };
   } else {
-    // For new IDs, use ID as name and a placeholder hex
     return { id, name: id, hex: '#CCCCCC', setId: 'ohuhu-honolulu-b' };
   }
 });
 
-export const INITIAL_MARKERS: Marker[] = [...honolulu120SetMarkers];
+const ohuhu104SetMarkers: Marker[] = ohuhu104MarkerIDs.map(id => {
+  const effectiveId = idMapping[id] || id;
+  const knownData = existingMarkerData[effectiveId];
+
+  if (knownData) {
+    return { id, name: knownData.name, hex: knownData.hex, setId: 'ohuhu-104' };
+  } else {
+    return { id, name: id, hex: '#CCCCCC', setId: 'ohuhu-104' };
+  }
+});
+
+
+export const INITIAL_MARKERS: Marker[] = [...honolulu120SetMarkers, ...ohuhu104SetMarkers];
 
 export const COMMON_COLORS_FILTER = [
   { name: "Red", hexBase: "#FF0000" },
@@ -179,3 +208,4 @@ export const COMMON_COLORS_FILTER = [
   { name: "Black", hexBase: "#000000" },
   { name: "White", hexBase: "#FFFFFF" },
 ];
+
