@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+// Input removed as per request
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateShadeVariations, type GenerateShadeVariationsInput, type GenerateShadeVariationsOutput, type ShadeVariationResult } from '@/ai/flows/shade-variation-generator';
 import { useToast } from '@/hooks/use-toast';
@@ -20,35 +20,33 @@ interface ShadeVariationGeneratorProps {
   onClearSelectedMarker?: () => void; // Callback to clear selection
 }
 
-const hexColorRegex = /^#([0-9A-Fa-f]{3}){1,2}$/;
+// hexColorRegex removed as manual input is gone
 
 export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, onClearSelectedMarker }: ShadeVariationGeneratorProps) {
-  const [baseColor, setBaseColor] = useState<string>('');
+  const [baseColor, setBaseColor] = useState<string>(''); // This will now only store hex from selected inventory marker
   const [numShades, setNumShades] = useState<number>(5);
   const [generatedShades, setGeneratedShades] = useState<ShadeVariationResult[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [previewColor, setPreviewColor] = useState<string>('transparent');
+  // previewColor state and its useEffect removed
   const { toast } = useToast();
 
   useEffect(() => {
     if (selectedMarkerForShades) {
       setBaseColor(selectedMarkerForShades.hex);
+    } else {
+      // If selectedMarkerForShades is cleared externally, ensure baseColor is also cleared
+      // if it matched the cleared marker. This might be redundant if onClearSelectedMarker also clears baseColor.
+      setBaseColor(''); 
     }
   }, [selectedMarkerForShades]);
 
-  useEffect(() => {
-    if (hexColorRegex.test(baseColor)) {
-      setPreviewColor(baseColor);
-    } else {
-      setPreviewColor('transparent');
-    }
-  }, [baseColor]);
+  // useEffect for previewColor removed
 
   const handleGenerateShades = async () => {
-    if (!hexColorRegex.test(baseColor)) {
+    if (!baseColor) { // Check if a base color is selected from inventory
       toast({
-        title: 'Invalid Color',
-        description: 'Please enter or select a valid hex color code.',
+        title: 'No Color Selected',
+        description: 'Please select a base color from your inventory.',
         variant: 'destructive',
       });
       return;
@@ -102,8 +100,6 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     const selected = inventory.find(m => m.id === markerId);
     if (selected) {
       setBaseColor(selected.hex);
-      // If the selected marker for shades was set via prop, clear it
-      // so direct selection takes over.
       if (onClearSelectedMarker && selectedMarkerForShades && selectedMarkerForShades.id !== markerId) {
         onClearSelectedMarker();
       }
@@ -112,7 +108,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
   
   const handleClearSelection = () => {
     setBaseColor('');
-    setGeneratedShades([]); // Clear results when base color is cleared
+    setGeneratedShades([]);
     if (onClearSelectedMarker) onClearSelectedMarker();
   };
 
@@ -132,7 +128,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
           <div className="flex items-center gap-2">
             <Select 
               onValueChange={handleMarkerSelect} 
-              value={inventory.find(m => m.hex.toLowerCase() === baseColor.toLowerCase())?.id || ""} // Match ignoring case for hex
+              value={inventory.find(m => m.hex.toLowerCase() === baseColor.toLowerCase())?.id || ""}
               disabled={isLoading}
             >
               <SelectTrigger className="flex-grow">
@@ -149,20 +145,11 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
                 ))}
               </SelectContent>
             </Select>
-             {(baseColor || selectedMarkerForShades) && (
+             {(baseColor || selectedMarkerForShades) && ( // Show clear if a baseColor is set (from inventory) or pre-selected
               <Button variant="ghost" size="sm" onClick={handleClearSelection} disabled={isLoading}>Clear</Button>
             )}
           </div>
-          <div className="flex items-center gap-2">
-             <Input
-              value={baseColor}
-              onChange={(e) => setBaseColor(e.target.value)}
-              placeholder="Or enter #RRGGBB"
-              className="flex-grow"
-              disabled={isLoading}
-            />
-            <ColorSwatch hexColor={previewColor} size="md" />
-          </div>
+          {/* Manual hex input and its preview swatch removed */}
         </div>
 
         <div className="space-y-2">
@@ -212,7 +199,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {generatedShades.map((marker, index) => (
                 <Card 
-                  key={marker.id + '-' + index} // Ensure unique key if same marker appears multiple times
+                  key={marker.id + '-' + index} 
                   className="flex flex-col items-center p-2 text-center transition-transform hover:scale-105 cursor-pointer shadow-sm"
                   onClick={() => {
                     navigator.clipboard.writeText(marker.hex);
