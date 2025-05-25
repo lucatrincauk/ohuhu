@@ -224,7 +224,27 @@ export default function OhuhuHarmonyPage() {
       tempResults.sort((a, b) => {
         const hueA = getHueFromHex(a.hex);
         const hueB = getHueFromHex(b.hex);
-        return hueA - hueB;
+
+        if (hueA === hueB) {
+          const rgbA = hexToRgb(a.hex);
+          const rgbB = hexToRgb(b.hex);
+
+          if (rgbA && rgbB) {
+            const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
+            const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
+
+            // Only apply secondary sort if they are chromatic colors (not greyscale)
+            // because greyscales are already sorted by lightness by getHueFromHex.
+            if (hslA.s >= 0.1 && hslB.s >= 0.1) {
+              // Sort by lightness: lighter (higher L) to darker (lower L)
+              // To achieve this, if A is lighter (hslA.l > hslB.l), A should come first.
+              // So, we return a negative value if hslA.l > hslB.l.
+              return hslB.l - hslA.l;
+            }
+          }
+          return 0; // Keep original relative order for greys with same lightness or if RGB conversion failed
+        }
+        return hueA - hueB; // Primary sort by effective hue
       });
     } else if (sortOrder === 'id') {
       tempResults.sort((a, b) => a.id.localeCompare(b.id));
@@ -530,3 +550,4 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
+
