@@ -6,11 +6,10 @@ interface MarkerGridProps {
   markers: Marker[];
   markerSets: MarkerSet[]; // Added markerSets prop
   onSelectMarkerForShades?: (marker: Marker) => void;
-  onEditMarker?: (marker: Marker) => void;
   ownedSetIds?: string[];
 }
 
-export function MarkerGrid({ markers, markerSets, onSelectMarkerForShades, onEditMarker, ownedSetIds }: MarkerGridProps) {
+export function MarkerGrid({ markers, markerSets, onSelectMarkerForShades, ownedSetIds }: MarkerGridProps) {
   if (!markers || markers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -29,7 +28,6 @@ export function MarkerGrid({ markers, markerSets, onSelectMarkerForShades, onEdi
           marker={marker}
           markerSets={markerSets} // Pass markerSets
           onSelectForShades={onSelectMarkerForShades}
-          onEditMarker={onEditMarker}
           isOwned={ownedSetIds ? ownedSetIds.includes(marker.setId) : true}
         />
       ))}
