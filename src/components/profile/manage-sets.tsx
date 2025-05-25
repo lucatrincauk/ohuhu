@@ -6,7 +6,7 @@ import { useMarkerData } from '@/hooks/use-marker-data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserCog, Palette } from 'lucide-react'; // Added Palette for loading
+import { Library, Palette } from 'lucide-react'; // Changed UserCog to Library
 
 export function ManageSetsPage() {
   const { markerSets, ownedSetIds, updateOwnedSetIds, isInitialized } = useMarkerData();
@@ -15,7 +15,7 @@ export function ManageSetsPage() {
     return (
       <div className="flex flex-col items-center justify-center p-10 text-muted-foreground">
         <Palette className="h-12 w-12 text-primary animate-pulse mb-4" />
-        <p>Loading your profile...</p>
+        <p>Loading your sets...</p>
       </div>
     );
   }
@@ -37,11 +37,11 @@ export function ManageSetsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <div className="flex items-center gap-3 mb-2">
-            <UserCog className="h-7 w-7 text-primary" />
-            <CardTitle className="text-2xl">Manage My Marker Sets</CardTitle>
+            <Library className="h-7 w-7 text-primary" /> {/* Changed UserCog to Library */}
+            <CardTitle className="text-2xl">My Marker Sets</CardTitle> {/* Changed title */}
           </div>
           <CardDescription>
-            Select the Ohuhu marker sets you currently own. Markers from sets you don't own will be visually indicated in your palette.
+            Select the Ohuhu marker sets you currently own. Markers from sets you don&apos;t own will be visually indicated in your palette.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -49,8 +49,8 @@ export function ManageSetsPage() {
             <p className="text-muted-foreground text-center py-4">No marker sets are currently defined in the application.</p>
           ) : (
             markerSets.map(set => (
-              <div 
-                key={set.id} 
+              <div
+                key={set.id}
                 className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
                 onClick={() => handleSetOwnershipChange(set.id, !ownedSetIds.includes(set.id))}
                 role="checkbox"
@@ -66,8 +66,8 @@ export function ManageSetsPage() {
                   }}
                   aria-labelledby={`label-set-${set.id}`}
                 />
-                <Label 
-                  htmlFor={`set-${set.id}`} 
+                <Label
+                  htmlFor={`set-${set.id}`}
                   id={`label-set-${set.id}`}
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-grow cursor-pointer"
                 >

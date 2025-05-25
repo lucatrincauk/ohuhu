@@ -1,15 +1,16 @@
 
-import type { Marker } from '@/lib/types';
+import type { Marker, MarkerSet } from '@/lib/types';
 import { MarkerCard } from './marker-card';
 
 interface MarkerGridProps {
   markers: Marker[];
+  markerSets: MarkerSet[]; // Added markerSets prop
   onSelectMarkerForShades?: (marker: Marker) => void;
   onEditMarker?: (marker: Marker) => void;
   ownedSetIds?: string[];
 }
 
-export function MarkerGrid({ markers, onSelectMarkerForShades, onEditMarker, ownedSetIds }: MarkerGridProps) {
+export function MarkerGrid({ markers, markerSets, onSelectMarkerForShades, onEditMarker, ownedSetIds }: MarkerGridProps) {
   if (!markers || markers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -21,11 +22,12 @@ export function MarkerGrid({ markers, onSelectMarkerForShades, onEditMarker, own
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 p-3 md:p-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 p-2 md:p-3"> {/* Reduced gap and padding */}
       {markers.map((marker) => (
-        <MarkerCard 
-          key={marker.id} 
-          marker={marker} 
+        <MarkerCard
+          key={marker.id}
+          marker={marker}
+          markerSets={markerSets} // Pass markerSets
           onSelectForShades={onSelectMarkerForShades}
           onEditMarker={onEditMarker}
           isOwned={ownedSetIds ? ownedSetIds.includes(marker.setId) : true}

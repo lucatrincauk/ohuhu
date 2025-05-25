@@ -24,7 +24,7 @@ import type { Marker } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search, Tags, Edit, LayoutGrid, ChevronDown, UserCog } from 'lucide-react';
+import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search, Tags, Edit, LayoutGrid, ChevronDown, UserCog, Library } from 'lucide-react'; // Added Library icon
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -41,12 +41,12 @@ import {
 import { ColorSwatch } from '@/components/core/color-swatch';
 
 
-type ActivePageContentType = 'palette' | 'add' | 'similar' | 'shades' | 'profile';
+type ActivePageContentType = 'palette' | 'add' | 'similar' | 'shades' | 'sets'; // Changed 'profile' to 'sets'
 type ActiveSidebarContentType = null;
 
 // Helper functions for color conversion and hue extraction
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  if (!hex) { 
+  if (!hex) {
     return null;
   }
   let normalizedHex = hex.replace(/^#/, '');
@@ -93,10 +93,10 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
 
 function getHueFromHex(hex: string): number {
   const rgb = hexToRgb(hex);
-  if (!rgb) return 361; 
+  if (!rgb) return 361;
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-  if (hsl.s < 0.1) { 
-    return 360 + (1 - hsl.l) * 100; 
+  if (hsl.s < 0.1) {
+    return 360 + (1 - hsl.l) * 100;
   }
   return hsl.h;
 }
@@ -268,6 +268,7 @@ export default function OhuhuHarmonyPage() {
       case 'palette':
         return <MarkerGrid
                   markers={displayedMarkers}
+                  markerSets={markerSets} // Pass markerSets
                   onSelectMarkerForShades={handleSelectMarkerForShades}
                   onEditMarker={handleOpenEditDialog}
                   ownedSetIds={ownedSetIds}
@@ -278,11 +279,12 @@ export default function OhuhuHarmonyPage() {
         return <div className="p-4 md:p-6 max-w-2xl mx-auto"><SimilarColorFinder inventory={allMarkers} /></div>;
       case 'shades':
         return <div className="p-4 md:p-6 max-w-2xl mx-auto"><ShadeVariationGenerator inventory={allMarkers} selectedMarkerForShades={selectedMarkerForShades} onClearSelectedMarker={clearSelectedMarkerForShades} /></div>;
-      case 'profile':
+      case 'sets': // Changed 'profile' to 'sets'
         return <ManageSetsPage />;
       default:
         return <MarkerGrid
                   markers={displayedMarkers}
+                  markerSets={markerSets} // Pass markerSets
                   onSelectMarkerForShades={handleSelectMarkerForShades}
                   onEditMarker={handleOpenEditDialog}
                   ownedSetIds={ownedSetIds}
@@ -307,11 +309,12 @@ export default function OhuhuHarmonyPage() {
     { id: 'add', name: "Add Marker", Icon: PlusSquare, type: 'main', action: () => { setActivePageContent('add'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
     { id: 'similar', name: "Similar Colors", Icon: SearchCode, type: 'main', action: () => { setActivePageContent('similar'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
     { id: 'shades', name: "Shade Variations", Icon: Layers, type: 'main', action: () => { setActivePageContent('shades'); setActiveSidebarContent(null); setSearchTerm(''); }},
-    { id: 'profile', name: "My Profile", Icon: UserCog, type: 'main', action: () => { setActivePageContent('profile'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
+    { id: 'sets', name: "My Sets", Icon: Library, type: 'main', action: () => { setActivePageContent('sets'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }}, // Changed id to 'sets', name to "My Sets", Icon to Library
   ];
 
   const getHeaderTitle = () => {
     if (activePageContent === 'palette') return "My Marker Palette";
+    if (activePageContent === 'sets') return "My Sets"; // Added for "My Sets" title
     const activeButton = sidebarButtons.find(btn => btn.id === activePageContent);
     return activeButton ? activeButton.name : "Ohuhu Harmony";
   };
@@ -385,7 +388,7 @@ export default function OhuhuHarmonyPage() {
                       <ChevronDown className="h-3.5 w-3.5 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="start"> {/* Changed to align="start" */}
                     <DropdownMenuLabel>Filter by color category</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {COMMON_COLORS_FILTER.map((color) => (
@@ -422,7 +425,7 @@ export default function OhuhuHarmonyPage() {
                       <ChevronDown className="h-3.5 w-3.5 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="start"> {/* Changed to align="start" */}
                     <DropdownMenuLabel>Filter by marker set</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuCheckboxItem
@@ -448,7 +451,7 @@ export default function OhuhuHarmonyPage() {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                
+
                 <div className="relative flex-1 md:grow-0 max-w-xs ml-auto">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -478,4 +481,3 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
-
