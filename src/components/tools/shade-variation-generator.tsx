@@ -20,6 +20,9 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { useMarkerData } from '@/hooks/use-marker-data';
 import { cn } from '@/lib/utils';
 
 interface ShadeVariationGeneratorProps {
@@ -35,8 +38,9 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
   const [comboboxOpen, setComboboxOpen] = useState(false);
-  // Stores the ID of the marker selected via combobox to help display its name in the trigger
   const [selectedMarkerIdForTrigger, setSelectedMarkerIdForTrigger] = useState<string>("");
+  const [searchScope, setSearchScope] = useState<'all' | 'owned'>('all');
+  const { ownedSetIds } = useMarkerData();
 
 
   useEffect(() => {
@@ -44,10 +48,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
       setBaseColor(selectedMarkerForShades.hex);
       setSelectedMarkerIdForTrigger(selectedMarkerForShades.id);
     } else {
-      // If cleared externally, reset component's selection state
-      if (!baseColor && !selectedMarkerIdForTrigger) return; // Avoid unnecessary sets if already clear
-      // Check if current baseColor actually came from the selectedMarkerForShades
-      // This is a bit tricky, better to just clear if selectedMarkerForShades is null
+      if (!baseColor && !selectedMarkerIdForTrigger) return;
       setBaseColor('');
       setSelectedMarkerIdForTrigger('');
     }
@@ -59,8 +60,6 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     if (selected) {
       setBaseColor(selected.hex);
       setSelectedMarkerIdForTrigger(markerId);
-      // If a marker is selected via combobox, it implies any pre-selection (selectedMarkerForShades) is overridden
-      // So, call onClearSelectedMarker if the new selection is different from the prop-based one
       if (onClearSelectedMarker && selectedMarkerForShades && selectedMarkerForShades.id !== markerId) {
         onClearSelectedMarker();
       }
@@ -86,7 +85,39 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
       });
       return;
     }
-    if (inventory.length === 0) {
+
+    let inventoryToSearch = inventory;
+    if (searchScope === 'owned') {
+      if (ownedSetIds.length === 0) {
+        toast({
+          title: 'No Owned Sets',
+          description: 'You have not selected any owned sets. Please select "Search all markers" or update your owned sets.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      inventoryToSearch = inventory.filter(marker => ownedSetIds.includes(marker.setId));
+      if (inventoryToSearch.length === 0) {
+         toast({
+          title: 'No Markers in Owned Sets',
+          description: 'There are no markers in your selected owned sets to search for variations.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    if (inventoryToSearch.length === 0 && inventory.length > 0) { // This case covers if all inventory exists, but owned filter results in zero
+         toast({
+          title: 'No Markers to Search',
+          description: 'The current filter (e.g. "owned sets") resulted in no markers to search for variations.',
+          variant: 'destructive',
+        });
+        return;
+    }
+
+
+    if (inventory.length === 0) { // General empty inventory check
       toast({
         title: 'Empty Inventory',
         description: 'Your marker inventory is empty. Add some markers first.',
@@ -95,10 +126,11 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
       return;
     }
 
+
     setIsLoading(true);
     setGeneratedShades([]);
 
-    const markerInventoryForAI = inventory.map(m => ({
+    const markerInventoryForAI = inventoryToSearch.map(m => ({
       id: m.id,
       name: m.name,
       hex: m.hex,
@@ -116,7 +148,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
       if (!result.shades || result.shades.length === 0) {
         toast({
           title: 'No Variations Found',
-          description: 'Could not find suitable shade variations in your inventory for this color.',
+          description: 'Could not find suitable shade variations in the selected marker scope for this color.',
         });
       }
     } catch (error) {
@@ -174,7 +206,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
                       {inventory.map((marker) => (
                         <CommandItem
                           key={marker.id}
-                          value={`${marker.name} ${marker.id} ${marker.hex}`} // Value for searching
+                          value={`${marker.name} ${marker.id} ${marker.hex}`}
                           onSelect={() => {
                             handleMarkerSelect(marker.id);
                           }}
@@ -218,6 +250,33 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
           />
         </div>
 
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Search Scope</Label>
+          <RadioGroup
+            value={searchScope}
+            onValueChange={(value: 'all' | 'owned') => setSearchScope(value)}
+            className="flex space-x-4"
+            disabled={isLoading}
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="all" id="scope-all" />
+              <Label htmlFor="scope-all" className="font-normal">All markers in inventory</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="owned" id="scope-owned" disabled={ownedSetIds.length === 0} />
+              <Label htmlFor="scope-owned" className={cn("font-normal", ownedSetIds.length === 0 && "text-muted-foreground cursor-not-allowed")}>
+                Only markers from my owned sets
+              </Label>
+            </div>
+          </RadioGroup>
+           {searchScope === 'owned' && ownedSetIds.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              You don't have any owned sets selected. Go to "My Sets" to update.
+            </p>
+          )}
+        </div>
+
+
         <Button onClick={handleGenerateShades} disabled={isLoading || !baseColor || inventory.length === 0} className="w-full">
           {isLoading ? (
             <>
@@ -246,7 +305,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
 
         {!isLoading && generatedShades.length > 0 && (
           <div className="mt-4 space-y-2">
-            <h4 className="font-semibold">Suggested Shades from Your Inventory:</h4>
+            <h4 className="font-semibold">Suggested Shades:</h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {generatedShades.map((marker, index) => (
                 <Card
@@ -277,3 +336,4 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     </Card>
   );
 }
+
