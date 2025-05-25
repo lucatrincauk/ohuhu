@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateShadeVariations, type GenerateShadeVariationsInput, type ShadeVariationResult } from '@/ai/flows/shade-variation-generator';
 import { useToast } from '@/hooks/use-toast';
-import type { Marker } from '@/lib/types';
+import type { Marker, MarkerSet } from '@/lib/types';
 import { ColorSwatch } from '@/components/core/color-swatch';
 import { Layers, Palette, Check, ChevronsUpDown } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -24,6 +24,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import { cn } from '@/lib/utils';
+import { MarkerCard } from '@/components/markers/marker-card'; // Import MarkerCard
 
 interface ShadeVariationGeneratorProps {
   inventory: Marker[];
@@ -32,7 +33,7 @@ interface ShadeVariationGeneratorProps {
 }
 
 export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, onClearSelectedMarker }: ShadeVariationGeneratorProps) {
-  const [baseColor, setBaseColor] = useState<string>('');
+  const [baseColor, setBaseColor] = useState<string>(''); // Stores the hex of the selected base marker
   const [numShades, setNumShades] = useState<number>(5);
   const [generatedShades, setGeneratedShades] = useState<ShadeVariationResult[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -40,7 +41,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [selectedMarkerIdForTrigger, setSelectedMarkerIdForTrigger] = useState<string>("");
   const [searchScope, setSearchScope] = useState<'all' | 'owned'>('all');
-  const { ownedSetIds } = useMarkerData();
+  const { ownedSetIds, markerSets } = useMarkerData(); // Get markerSets and ownedSetIds
 
 
   useEffect(() => {
@@ -48,10 +49,13 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
       setBaseColor(selectedMarkerForShades.hex);
       setSelectedMarkerIdForTrigger(selectedMarkerForShades.id);
     } else {
-      if (!baseColor && !selectedMarkerIdForTrigger) return;
+      // Only clear if there was a baseColor or selectedMarkerIdForTrigger,
+      // to avoid clearing on initial mount if no selectedMarkerForShades is passed.
+      if (!baseColor && !selectedMarkerIdForTrigger && !selectedMarkerForShades) return;
       setBaseColor('');
       setSelectedMarkerIdForTrigger('');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMarkerForShades]);
 
 
@@ -60,6 +64,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     if (selected) {
       setBaseColor(selected.hex);
       setSelectedMarkerIdForTrigger(markerId);
+      // If a marker was pre-selected via prop and user picks a different one, clear the prop's effect
       if (onClearSelectedMarker && selectedMarkerForShades && selectedMarkerForShades.id !== markerId) {
         onClearSelectedMarker();
       }
@@ -107,7 +112,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
       }
     }
 
-    if (inventoryToSearch.length === 0 && inventory.length > 0) { // This case covers if all inventory exists, but owned filter results in zero
+    if (inventoryToSearch.length === 0 && inventory.length > 0) {
          toast({
           title: 'No Markers to Search',
           description: 'The current filter (e.g. "owned sets") resulted in no markers to search for variations.',
@@ -117,7 +122,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     }
 
 
-    if (inventory.length === 0) { // General empty inventory check
+    if (inventory.length === 0) {
       toast({
         title: 'Empty Inventory',
         description: 'Your marker inventory is empty. Add some markers first.',
@@ -130,10 +135,12 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     setIsLoading(true);
     setGeneratedShades([]);
 
+    // Ensure setId is included for the AI flow
     const markerInventoryForAI = inventoryToSearch.map(m => ({
       id: m.id,
       name: m.name,
       hex: m.hex,
+      setId: m.setId, // Pass setId to AI
     }));
 
     const input: GenerateShadeVariationsInput = {
@@ -294,10 +301,16 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
         {isLoading && (
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {[...Array(numShades)].map((_, i) => (
-              <div key={i} className="p-2 border rounded-md space-y-1 bg-muted/30">
-                <Skeleton className="h-10 w-10 rounded-md" />
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-1/2" />
+               <div key={i} className="flex flex-col items-center">
+                <div className="p-2 border rounded-md space-y-1 bg-muted/30 w-full"> {/* Simulating card structure */}
+                  <Skeleton className="h-20 w-full rounded-t-md" /> {/* For color swatch area */}
+                  <div className="p-2 space-y-0.5">
+                    <Skeleton className="h-3 w-3/4" /> {/* For name */}
+                    <Skeleton className="h-3 w-1/2" /> {/* For ID */}
+                    <Skeleton className="h-3 w-1/2" /> {/* For Set */}
+                  </div>
+                </div>
+                <Skeleton className="h-3 w-1/4 mt-1" /> {/* For similarity score placeholder */}
               </div>
             ))}
           </div>
@@ -306,28 +319,21 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
         {!isLoading && generatedShades.length > 0 && (
           <div className="mt-4 space-y-2">
             <h4 className="font-semibold">Suggested Shades:</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {generatedShades.map((marker, index) => (
-                <Card
-                  key={marker.id + '-' + index}
-                  className="flex flex-col items-center p-2 text-center transition-transform hover:scale-105 cursor-pointer shadow-sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(marker.hex);
-                    toast({ title: "Copied!", description: `${marker.hex} (${marker.name}) copied to clipboard.` });
-                  }}
-                >
-                  <ColorSwatch
-                    hexColor={marker.hex}
-                    size="md"
-                    className="mb-1"
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-2 gap-y-3"> {/* Adjusted gap */}
+              {generatedShades.map((shade, index) => (
+                <div key={shade.id + '-' + index} className="flex flex-col items-center">
+                  <MarkerCard
+                    marker={{ id: shade.id, name: shade.name, hex: shade.hex, setId: shade.setId }}
+                    markerSets={markerSets}
+                    isOwned={ownedSetIds.includes(shade.setId)}
+                    // onSelectForShades is not used here as these cards are results, not triggers
                   />
-                  <p className="text-xs font-semibold truncate w-full" title={marker.name}>{marker.name}</p>
-                  <p className="text-xs text-muted-foreground">({marker.id})</p>
-                  <p className="text-xs text-muted-foreground">{marker.hex.toUpperCase()}</p>
-                  {marker.similarityScore !== undefined && (
-                    <p className="text-xs text-primary/80">Score: {(marker.similarityScore * 100).toFixed(0)}%</p>
+                  {shade.similarityScore !== undefined && (
+                    <p className="text-xs text-primary/80 mt-1">
+                      Score: {(shade.similarityScore * 100).toFixed(0)}%
+                    </p>
                   )}
-                </Card>
+                </div>
               ))}
             </div>
           </div>
