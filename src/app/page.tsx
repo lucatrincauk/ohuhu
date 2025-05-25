@@ -48,6 +48,7 @@ import { cn } from '@/lib/utils';
 type ActivePageContentType = 'palette' | 'add' | 'similar' | 'shades' | 'sets';
 type ActiveSidebarContentType = null;
 type SortOrder = 'hue' | 'id' | 'name';
+type SetFilterValue = string | null | '__owned__';
 
 
 // Helper functions for color conversion and hue extraction
@@ -172,10 +173,9 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
 export default function OhuhuHarmonyPage() {
   const { markers: allMarkers, markerSets, addMarker, isInitialized, ownedSetIds } = useMarkerData();
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
-  const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
+  const [selectedSetId, setSelectedSetId] = useState<SetFilterValue>(null);
   const [selectedColorCategory, setSelectedColorCategory] = useState<{ name: string; hex: string } | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('hue');
-  const [showOnlyOwned, setShowOnlyOwned] = useState<boolean>(false);
 
   const [activePageContent, setActivePageContent] = useState<ActivePageContentType>('palette');
   const [activeSidebarContent, setActiveSidebarContent] = useState<ActiveSidebarContentType>(null);
@@ -189,24 +189,26 @@ export default function OhuhuHarmonyPage() {
 
     let tempResults = [...allMarkers];
 
-    if (selectedSetId) {
+    // Apply set filter
+    if (selectedSetId === '__owned__') {
+      if (ownedSetIds.length === 0) {
+        tempResults = []; // Show no markers if "only owned" is selected but no sets are owned
+      } else {
+        tempResults = tempResults.filter(marker => ownedSetIds.includes(marker.setId));
+      }
+    } else if (selectedSetId) { // A specific set is chosen
       tempResults = tempResults.filter(marker => marker.setId === selectedSetId);
     }
+    // If selectedSetId is null, all markers are included initially
 
+    // Apply color category filter
     if (selectedColorCategory) {
       tempResults = tempResults.filter(marker =>
         isColorInCategory(marker.hex, selectedColorCategory.hex)
       );
     }
 
-    if (showOnlyOwned) {
-      if (ownedSetIds.length === 0) {
-        tempResults = []; // Show no markers if "show only owned" is on but no sets are owned
-      } else {
-        tempResults = tempResults.filter(marker => ownedSetIds.includes(marker.setId));
-      }
-    }
-
+    // Apply search term filter for palette view
     if (searchTerm.trim() !== '' && activePageContent === 'palette') {
       const lowerSearchTerm = searchTerm.toLowerCase();
       tempResults = tempResults.filter(
@@ -217,6 +219,7 @@ export default function OhuhuHarmonyPage() {
       );
     }
 
+    // Apply sort order
     if (sortOrder === 'hue') {
       tempResults.sort((a, b) => {
         const hueA = getHueFromHex(a.hex);
@@ -231,10 +234,10 @@ export default function OhuhuHarmonyPage() {
 
     setDisplayedMarkers(tempResults);
 
-  }, [searchTerm, selectedColorCategory, selectedSetId, allMarkers, isInitialized, activePageContent, sortOrder, showOnlyOwned, ownedSetIds]);
+  }, [searchTerm, selectedColorCategory, selectedSetId, allMarkers, isInitialized, activePageContent, sortOrder, ownedSetIds]);
 
 
-  const handleSetFilterChange = (setId: string | null) => {
+  const handleSetFilterChange = (setId: SetFilterValue) => {
     setSelectedSetId(setId);
   };
 
@@ -249,7 +252,7 @@ export default function OhuhuHarmonyPage() {
   const handleSelectMarkerForShades = (marker: Marker) => {
     setSelectedMarkerForShades(marker);
     setActivePageContent('shades');
-    setActiveSidebarContent(null); // Ensure sidebar content clears
+    setActiveSidebarContent(null);
   };
 
   const clearSelectedMarkerForShades = () => {
@@ -300,24 +303,22 @@ export default function OhuhuHarmonyPage() {
   };
 
   const renderSidebarWidget = () => {
-    // Sidebar no longer renders active tools, just a generic message or specific filter UIs.
-    // For now, a simple message. This area can be enhanced later if needed.
     return <p className="p-4 text-center text-sm text-muted-foreground">Select a tool or navigate using the main panel.</p>;
   };
 
   interface SidebarButtonConfig {
-    id: ActivePageContentType | 'view_palette'; // 'view_palette' is a special id for navigation
+    id: ActivePageContentType | 'view_palette';
     name: string;
     Icon: LucideIcon;
     action: () => void;
-    type: 'main' | 'navigation'; // 'navigation' type for buttons that just change the page content
+    type: 'main' | 'navigation';
   }
 
   const sidebarButtons: SidebarButtonConfig[] = [
     { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: () => { setActivePageContent('palette'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
     { id: 'add', name: "Add Marker", Icon: PlusSquare, type: 'main', action: () => { setActivePageContent('add'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
     { id: 'similar', name: "Similar Colors", Icon: SearchCode, type: 'main', action: () => { setActivePageContent('similar'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
-    { id: 'shades', name: "Shade Variations", Icon: Layers, type: 'main', action: () => { setActivePageContent('shades'); setActiveSidebarContent(null); setSearchTerm(''); }}, // selectedMarkerForShades will be set via MarkerCard
+    { id: 'shades', name: "Shade Variations", Icon: Layers, type: 'main', action: () => { setActivePageContent('shades'); setActiveSidebarContent(null); setSearchTerm(''); }},
     { id: 'sets', name: "My Sets", Icon: Library, type: 'main', action: () => { setActivePageContent('sets'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
   ];
 
@@ -325,7 +326,7 @@ export default function OhuhuHarmonyPage() {
     if (activePageContent === 'palette') return "My Marker Palette";
     if (activePageContent === 'sets') return "My Sets";
     const activeButton = sidebarButtons.find(btn => btn.id === activePageContent);
-    return activeButton ? activeButton.name : "Ohuhu Harmony"; // Fallback title
+    return activeButton ? activeButton.name : "Ohuhu Harmony";
   };
 
   const isPaletteView = activePageContent === 'palette';
@@ -334,6 +335,17 @@ export default function OhuhuHarmonyPage() {
     hue: 'By Color',
     id: 'By ID',
     name: 'By Name',
+  };
+
+  const getSetFilterLabel = () => {
+    if (selectedSetId === '__owned__') {
+      return "Set: Only Owned";
+    }
+    if (selectedSetId) {
+      const set = markerSets.find(s => s.id === selectedSetId);
+      return `Set: ${set ? set.name : 'Unknown'}`;
+    }
+    return "Filter Set";
   };
 
 
@@ -352,7 +364,7 @@ export default function OhuhuHarmonyPage() {
                     key={button.id}
                     variant={
                       (activePageContent === button.id && button.type === 'main') ||
-                      (activePageContent === 'palette' && button.id === 'view_palette') // Highlight "My Palette" if active
+                      (activePageContent === 'palette' && button.id === 'view_palette')
                       ? 'default'
                       : 'ghost'
                     }
@@ -367,7 +379,6 @@ export default function OhuhuHarmonyPage() {
               </div>
               <Separator className="my-4 group-data-[collapsible=icon]:hidden" />
               <div className="p-4 group-data-[collapsible=icon]:hidden">
-                {/* Conditionally render sidebar content or a default message */}
                 {activeSidebarContent ? renderSidebarWidget() : <p className="p-4 text-center text-sm text-muted-foreground">Tools open in the main view.</p>}
               </div>
             </ScrollArea>
@@ -378,9 +389,7 @@ export default function OhuhuHarmonyPage() {
         </Sidebar>
 
         <SidebarInset className="flex-1 bg-background flex flex-col">
-          {/* Main Header: Title, Search (conditionally), Filters (conditionally) */}
           <header className="sticky top-0 z-10 flex h-auto flex-col gap-2 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 py-3">
-            {/* First Row: Toggle, Title, Marker Count, Show Owned Toggle */}
             <div className="flex h-10 items-center">
               <SidebarTrigger className="md:hidden mr-2">
                   <PanelLeft />
@@ -392,32 +401,10 @@ export default function OhuhuHarmonyPage() {
                   <span className="ml-2 text-sm text-muted-foreground">({displayedMarkers.length} marker{displayedMarkers.length === 1 ? '' : 's'})</span>
                 )}
               </div>
-              {isPaletteView && (
-                <div className="flex items-center space-x-2 ml-auto">
-                  <Switch
-                    id="show-only-owned"
-                    checked={showOnlyOwned}
-                    onCheckedChange={setShowOnlyOwned}
-                    disabled={ownedSetIds.length === 0}
-                    aria-label="Show only owned markers"
-                  />
-                  <Label
-                    htmlFor="show-only-owned"
-                    className={cn(
-                      "text-sm",
-                      ownedSetIds.length === 0 ? "text-muted-foreground cursor-not-allowed" : "cursor-pointer"
-                    )}
-                  >
-                    Show only owned
-                  </Label>
-                </div>
-              )}
             </div>
 
-            {/* Second Row: Filters and Search Bar (only for palette view) */}
             {isPaletteView && (
               <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
-                {/* Color Filter Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -436,7 +423,7 @@ export default function OhuhuHarmonyPage() {
                         key={color.name}
                         checked={selectedColorCategory?.name === color.name}
                         onSelect={(event) => {
-                           event.preventDefault(); // Prevent closing menu
+                           event.preventDefault();
                            handleColorCategorySelect(selectedColorCategory?.name === color.name ? null : color);
                         }}
                       >
@@ -455,13 +442,12 @@ export default function OhuhuHarmonyPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Set Filter Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-8 gap-1">
                       <Tags className="h-3.5 w-3.5" />
                       <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        {selectedSetId ? `Set: ${markerSets.find(s => s.id === selectedSetId)?.name || 'Unknown'}` : "Filter Set"}
+                        {getSetFilterLabel()}
                       </span>
                       <ChevronDown className="h-3.5 w-3.5 opacity-50" />
                     </Button>
@@ -470,13 +456,23 @@ export default function OhuhuHarmonyPage() {
                     <DropdownMenuLabel>Filter by marker set</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuCheckboxItem
-                      checked={!selectedSetId}
+                      checked={selectedSetId === null}
                       onSelect={(event) => {
                         event.preventDefault();
                         handleSetFilterChange(null);
                       }}
                     >
                       All Sets
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={selectedSetId === '__owned__'}
+                      disabled={ownedSetIds.length === 0}
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        handleSetFilterChange(selectedSetId === '__owned__' ? null : '__owned__');
+                      }}
+                    >
+                      Only My Owned Sets
                     </DropdownMenuCheckboxItem>
                     {markerSets.map((set) => (
                       <DropdownMenuCheckboxItem
@@ -493,7 +489,6 @@ export default function OhuhuHarmonyPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Sort Order Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -514,7 +509,6 @@ export default function OhuhuHarmonyPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Search Input - Pushed to the right */}
                 <div className="relative flex-1 md:grow-0 max-w-xs ml-auto">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -536,5 +530,3 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
-
-    
