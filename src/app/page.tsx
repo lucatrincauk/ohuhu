@@ -23,7 +23,7 @@ import type { Marker } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search, Tags, LayoutGrid, ChevronDown, Library } from 'lucide-react'; // Removed Edit, UserCog
+import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -36,12 +36,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { ColorSwatch } from '@/components/core/color-swatch';
 
 
 type ActivePageContentType = 'palette' | 'add' | 'similar' | 'shades' | 'sets';
 type ActiveSidebarContentType = null;
+type SortOrder = 'hue' | 'id' | 'name';
+
 
 // Helper functions for color conversion and hue extraction
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -167,6 +171,7 @@ export default function OhuhuHarmonyPage() {
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
   const [selectedColorCategory, setSelectedColorCategory] = useState<{ name: string; hex: string } | null>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>('hue');
 
   const [activePageContent, setActivePageContent] = useState<ActivePageContentType>('palette');
   const [activeSidebarContent, setActiveSidebarContent] = useState<ActiveSidebarContentType>(null);
@@ -200,15 +205,21 @@ export default function OhuhuHarmonyPage() {
       );
     }
 
-    tempResults.sort((a, b) => {
-      const hueA = getHueFromHex(a.hex);
-      const hueB = getHueFromHex(b.hex);
-      return hueA - hueB;
-    });
+    if (sortOrder === 'hue') {
+      tempResults.sort((a, b) => {
+        const hueA = getHueFromHex(a.hex);
+        const hueB = getHueFromHex(b.hex);
+        return hueA - hueB;
+      });
+    } else if (sortOrder === 'id') {
+      tempResults.sort((a, b) => a.id.localeCompare(b.id));
+    } else if (sortOrder === 'name') {
+      tempResults.sort((a, b) => a.name.localeCompare(b.name));
+    }
 
     setDisplayedMarkers(tempResults);
 
-  }, [searchTerm, selectedColorCategory, selectedSetId, allMarkers, isInitialized, activePageContent]);
+  }, [searchTerm, selectedColorCategory, selectedSetId, allMarkers, isInitialized, activePageContent, sortOrder]);
 
 
   const handleSetFilterChange = (setId: string | null) => {
@@ -307,13 +318,19 @@ export default function OhuhuHarmonyPage() {
 
   const isPaletteView = activePageContent === 'palette';
 
+  const sortOrderLabels: Record<SortOrder, string> = {
+    hue: 'By Color',
+    id: 'By ID',
+    name: 'By Name',
+  };
+
 
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex min-h-screen">
         <Sidebar collapsible="icon" variant="sidebar" className="border-r shadow-md">
           <SidebarHeader className="p-4 border-b">
-             <AppLogo /> {/* AppLogo no longer needs SIDEBAR_TITLE_ID here */}
+             <AppLogo />
           </SidebarHeader>
           <SidebarContent className="p-0">
             <ScrollArea className="h-full">
@@ -367,7 +384,7 @@ export default function OhuhuHarmonyPage() {
 
             {/* Second Row: Filters and Search Bar (only for palette view) */}
             {isPaletteView && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap"> {/* Added flex-wrap */}
                 {/* Color Filter Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -441,6 +458,27 @@ export default function OhuhuHarmonyPage() {
                         {set.name}
                       </DropdownMenuCheckboxItem>
                     ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Sort Order Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 gap-1">
+                      <SortAsc className="h-3.5 w-3.5" />
+                      <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                        Sort: {sortOrderLabels[sortOrder]}
+                      </span>
+                      <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuLabel>Sort markers by</DropdownMenuLabel>
+                    <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOrder)}>
+                      <DropdownMenuRadioItem value="hue">By Color</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="id">By ID</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="name">By Name</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
 
