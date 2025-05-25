@@ -30,7 +30,7 @@ const GenerateShadeVariationsInputSchema = z.object({
       id: z.string().describe('The unique identifier of the marker.'),
       name: z.string().describe('The name of the marker.'),
       hex: z.string().describe('The hex value of the marker color.'),
-      setId: z.string().describe('The ID of the marker set this marker belongs to.'), // Added setId here
+      setId: z.string().describe('The ID of the marker set this marker belongs to.'),
     })
   ).describe('The user\u2019s marker inventory, an array of marker objects.'),
 });
@@ -40,8 +40,7 @@ const ShadeVariationOutputItemSchema = z.object({
   id: z.string().describe('The ID of the suggested marker from the inventory.'),
   name: z.string().describe('The name of the suggested marker from the inventory.'),
   hex: z.string().regex(/^#([0-9A-Fa-f]{3}){1,2}$/).describe('The hex color code of the suggested marker.'),
-  setId: z.string().describe('The ID of the marker set this marker belongs to.'), // Added setId
-  similarityScore: z.number().optional().describe('A score indicating how close this marker is to being a good shade variation (0-1). Higher is better.')
+  setId: z.string().describe('The ID of the marker set this marker belongs to.'),
 });
 
 const GenerateShadeVariationsOutputSchema = z.object({
@@ -76,10 +75,9 @@ const prompt = ai.definePrompt({
   2. Based on the \`numShades\` parameter, select additional markers from the inventory to create a palette of lighter and darker variations around the base color match.
   3. The total number of returned markers should be exactly \`numShades\`.
   4. Prioritize markers that create a harmonious and visually appealing sequence of shades.
-  5. Calculate a 'similarityScore' for each suggested shade relative to the base color and its position in the shade sequence (e.g., how well it fits as a lighter/darker variant). This can be a subjective score from 0 to 1.
-  6. Return the selected markers as an array of objects, each containing 'id', 'name', 'hex', 'setId', and 'similarityScore'.
-  7. If the inventory is small or lacks good variations, try your best to pick the closest available options. If no reasonable shades can be found, you can return fewer than numShades, or an empty array if truly nothing fits.
-  8. Ensure the final output is an object with a 'shades' property containing the array of marker objects.
+  5. Return the selected markers as an array of objects, each containing 'id', 'name', 'hex', and 'setId'.
+  6. If the inventory is small or lacks good variations, try your best to pick the closest available options. If no reasonable shades can be found, you can return fewer than numShades, or an empty array if truly nothing fits.
+  7. Ensure the final output is an object with a 'shades' property containing the array of marker objects.
   Return the list of shades as marker objects from the inventory. Do not include any explanations or additional text outside the JSON structure.`,
 });
 

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateShadeVariations, type GenerateShadeVariationsInput, type ShadeVariationResult } from '@/ai/flows/shade-variation-generator';
 import { useToast } from '@/hooks/use-toast';
-import type { Marker, MarkerSet } from '@/lib/types';
+import type { Marker } from '@/lib/types';
 import { ColorSwatch } from '@/components/core/color-swatch';
 import { Layers, Palette, Check, ChevronsUpDown } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -24,13 +24,72 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import { cn } from '@/lib/utils';
-import { MarkerCard } from '@/components/markers/marker-card'; // Import MarkerCard
+import { MarkerCard } from '@/components/markers/marker-card';
 
 interface ShadeVariationGeneratorProps {
   inventory: Marker[];
   selectedMarkerForShades?: Marker | null;
   onClearSelectedMarker?: () => void;
 }
+
+// Helper functions for color conversion and hue extraction (copied from page.tsx)
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  if (!hex) {
+    return null;
+  }
+  let normalizedHex = hex.replace(/^#/, '');
+  if (normalizedHex.length === 3) {
+    normalizedHex = normalizedHex.split('').map(char => char + char).join('');
+  }
+  if (normalizedHex.length !== 6) {
+    return null;
+  }
+  const num = parseInt(normalizedHex, 16);
+  if (isNaN(num)) {
+    return null;
+  }
+  return {
+    r: (num >> 16) & 0xFF,
+    g: (num >>  8) & 0xFF,
+    b: (num >>  0) & 0xFF,
+  };
+}
+
+function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return { h: h * 360, s, l };
+}
+
+function getHueFromHex(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 361; // Return a high value for sorting if hex is invalid
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  if (hsl.s < 0.1) { // Low saturation (greyscale)
+    // Sort greys by lightness (dark to light), mapped to a high hue range
+    return 360 + (1 - hsl.l) * 100; // e.g., black (l=0) -> 460, white (l=1) -> 360
+  }
+  return hsl.h;
+}
+
 
 export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, onClearSelectedMarker }: ShadeVariationGeneratorProps) {
   const [baseColor, setBaseColor] = useState<string>(''); // Stores the hex of the selected base marker
@@ -41,7 +100,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [selectedMarkerIdForTrigger, setSelectedMarkerIdForTrigger] = useState<string>("");
   const [searchScope, setSearchScope] = useState<'all' | 'owned'>('all');
-  const { ownedSetIds, markerSets } = useMarkerData(); // Get markerSets and ownedSetIds
+  const { ownedSetIds, markerSets } = useMarkerData();
 
 
   useEffect(() => {
@@ -49,8 +108,6 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
       setBaseColor(selectedMarkerForShades.hex);
       setSelectedMarkerIdForTrigger(selectedMarkerForShades.id);
     } else {
-      // Only clear if there was a baseColor or selectedMarkerIdForTrigger,
-      // to avoid clearing on initial mount if no selectedMarkerForShades is passed.
       if (!baseColor && !selectedMarkerIdForTrigger && !selectedMarkerForShades) return;
       setBaseColor('');
       setSelectedMarkerIdForTrigger('');
@@ -64,7 +121,6 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     if (selected) {
       setBaseColor(selected.hex);
       setSelectedMarkerIdForTrigger(markerId);
-      // If a marker was pre-selected via prop and user picks a different one, clear the prop's effect
       if (onClearSelectedMarker && selectedMarkerForShades && selectedMarkerForShades.id !== markerId) {
         onClearSelectedMarker();
       }
@@ -135,12 +191,11 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     setIsLoading(true);
     setGeneratedShades([]);
 
-    // Ensure setId is included for the AI flow
     const markerInventoryForAI = inventoryToSearch.map(m => ({
       id: m.id,
       name: m.name,
       hex: m.hex,
-      setId: m.setId, // Pass setId to AI
+      setId: m.setId,
     }));
 
     const input: GenerateShadeVariationsInput = {
@@ -151,7 +206,12 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
 
     try {
       const result = await generateShadeVariations(input);
-      setGeneratedShades(result.shades);
+      const sortedShades = result.shades.sort((a, b) => {
+        const hueA = getHueFromHex(a.hex);
+        const hueB = getHueFromHex(b.hex);
+        return hueA - hueB;
+      });
+      setGeneratedShades(sortedShades);
       if (!result.shades || result.shades.length === 0) {
         toast({
           title: 'No Variations Found',
@@ -302,15 +362,15 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {[...Array(numShades)].map((_, i) => (
                <div key={i} className="flex flex-col items-center">
-                <div className="p-2 border rounded-md space-y-1 bg-muted/30 w-full"> {/* Simulating card structure */}
-                  <Skeleton className="h-20 w-full rounded-t-md" /> {/* For color swatch area */}
+                <div className="p-2 border rounded-md space-y-1 bg-muted/30 w-full">
+                  <Skeleton className="h-20 w-full rounded-t-md" />
                   <div className="p-2 space-y-0.5">
-                    <Skeleton className="h-3 w-3/4" /> {/* For name */}
-                    <Skeleton className="h-3 w-1/2" /> {/* For ID */}
-                    <Skeleton className="h-3 w-1/2" /> {/* For Set */}
+                    <Skeleton className="h-3 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-3 w-1/2" />
                   </div>
                 </div>
-                <Skeleton className="h-3 w-1/4 mt-1" /> {/* For similarity score placeholder */}
+                {/* Removed Skeleton for similarity score */}
               </div>
             ))}
           </div>
@@ -319,20 +379,15 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
         {!isLoading && generatedShades.length > 0 && (
           <div className="mt-4 space-y-2">
             <h4 className="font-semibold">Suggested Shades:</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-2 gap-y-3"> {/* Adjusted gap */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-2 gap-y-3">
               {generatedShades.map((shade, index) => (
                 <div key={shade.id + '-' + index} className="flex flex-col items-center">
                   <MarkerCard
                     marker={{ id: shade.id, name: shade.name, hex: shade.hex, setId: shade.setId }}
                     markerSets={markerSets}
                     isOwned={ownedSetIds.includes(shade.setId)}
-                    // onSelectForShades is not used here as these cards are results, not triggers
                   />
-                  {shade.similarityScore !== undefined && (
-                    <p className="text-xs text-primary/80 mt-1">
-                      Score: {(shade.similarityScore * 100).toFixed(0)}%
-                    </p>
-                  )}
+                  {/* Removed similarity score display */}
                 </div>
               ))}
             </div>
