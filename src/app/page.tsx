@@ -23,7 +23,7 @@ import type { Marker } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc, CheckSquare } from 'lucide-react';
+import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -380,7 +380,7 @@ export default function OhuhuHarmonyPage() {
         <SidebarInset className="flex-1 bg-background flex flex-col">
           {/* Main Header: Title, Search (conditionally), Filters (conditionally) */}
           <header className="sticky top-0 z-10 flex h-auto flex-col gap-2 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 py-3">
-            {/* First Row: Toggle, Title, Marker Count */}
+            {/* First Row: Toggle, Title, Marker Count, Show Owned Toggle */}
             <div className="flex h-10 items-center">
               <SidebarTrigger className="md:hidden mr-2">
                   <PanelLeft />
@@ -392,11 +392,31 @@ export default function OhuhuHarmonyPage() {
                   <span className="ml-2 text-sm text-muted-foreground">({displayedMarkers.length} marker{displayedMarkers.length === 1 ? '' : 's'})</span>
                 )}
               </div>
+              {isPaletteView && (
+                <div className="flex items-center space-x-2 ml-auto">
+                  <Switch
+                    id="show-only-owned"
+                    checked={showOnlyOwned}
+                    onCheckedChange={setShowOnlyOwned}
+                    disabled={ownedSetIds.length === 0}
+                    aria-label="Show only owned markers"
+                  />
+                  <Label
+                    htmlFor="show-only-owned"
+                    className={cn(
+                      "text-sm",
+                      ownedSetIds.length === 0 ? "text-muted-foreground cursor-not-allowed" : "cursor-pointer"
+                    )}
+                  >
+                    Show only owned
+                  </Label>
+                </div>
+              )}
             </div>
 
             {/* Second Row: Filters and Search Bar (only for palette view) */}
             {isPaletteView && (
-              <div className="flex items-center gap-x-2 gap-y-1 flex-wrap"> {/* Added flex-wrap and gap-y */}
+              <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
                 {/* Color Filter Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -494,26 +514,6 @@ export default function OhuhuHarmonyPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Show Only Owned Toggle */}
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="show-only-owned"
-                    checked={showOnlyOwned}
-                    onCheckedChange={setShowOnlyOwned}
-                    disabled={ownedSetIds.length === 0}
-                    aria-label="Show only owned markers"
-                  />
-                  <Label 
-                    htmlFor="show-only-owned"
-                    className={cn(
-                      "text-sm",
-                      ownedSetIds.length === 0 ? "text-muted-foreground cursor-not-allowed" : "cursor-pointer"
-                    )}
-                  >
-                    Show only owned
-                  </Label>
-                </div>
-
                 {/* Search Input - Pushed to the right */}
                 <div className="relative flex-1 md:grow-0 max-w-xs ml-auto">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -536,3 +536,5 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
+
+    
