@@ -23,7 +23,7 @@ import type { Marker } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc } from 'lucide-react';
+import { Palette, PlusSquare, SearchCode, Layers, ListFilter, PanelLeft, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc, CheckSquare } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -40,6 +40,9 @@ import {
   DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { ColorSwatch } from '@/components/core/color-swatch';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 
 type ActivePageContentType = 'palette' | 'add' | 'similar' | 'shades' | 'sets';
@@ -172,6 +175,7 @@ export default function OhuhuHarmonyPage() {
   const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
   const [selectedColorCategory, setSelectedColorCategory] = useState<{ name: string; hex: string } | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('hue');
+  const [showOnlyOwned, setShowOnlyOwned] = useState<boolean>(false);
 
   const [activePageContent, setActivePageContent] = useState<ActivePageContentType>('palette');
   const [activeSidebarContent, setActiveSidebarContent] = useState<ActiveSidebarContentType>(null);
@@ -193,6 +197,14 @@ export default function OhuhuHarmonyPage() {
       tempResults = tempResults.filter(marker =>
         isColorInCategory(marker.hex, selectedColorCategory.hex)
       );
+    }
+
+    if (showOnlyOwned) {
+      if (ownedSetIds.length === 0) {
+        tempResults = []; // Show no markers if "show only owned" is on but no sets are owned
+      } else {
+        tempResults = tempResults.filter(marker => ownedSetIds.includes(marker.setId));
+      }
     }
 
     if (searchTerm.trim() !== '' && activePageContent === 'palette') {
@@ -219,7 +231,7 @@ export default function OhuhuHarmonyPage() {
 
     setDisplayedMarkers(tempResults);
 
-  }, [searchTerm, selectedColorCategory, selectedSetId, allMarkers, isInitialized, activePageContent, sortOrder]);
+  }, [searchTerm, selectedColorCategory, selectedSetId, allMarkers, isInitialized, activePageContent, sortOrder, showOnlyOwned, ownedSetIds]);
 
 
   const handleSetFilterChange = (setId: string | null) => {
@@ -384,7 +396,7 @@ export default function OhuhuHarmonyPage() {
 
             {/* Second Row: Filters and Search Bar (only for palette view) */}
             {isPaletteView && (
-              <div className="flex items-center gap-2 flex-wrap"> {/* Added flex-wrap */}
+              <div className="flex items-center gap-x-2 gap-y-1 flex-wrap"> {/* Added flex-wrap and gap-y */}
                 {/* Color Filter Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -481,6 +493,26 @@ export default function OhuhuHarmonyPage() {
                     </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Show Only Owned Toggle */}
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="show-only-owned"
+                    checked={showOnlyOwned}
+                    onCheckedChange={setShowOnlyOwned}
+                    disabled={ownedSetIds.length === 0}
+                    aria-label="Show only owned markers"
+                  />
+                  <Label 
+                    htmlFor="show-only-owned"
+                    className={cn(
+                      "text-sm",
+                      ownedSetIds.length === 0 ? "text-muted-foreground cursor-not-allowed" : "cursor-pointer"
+                    )}
+                  >
+                    Show only owned
+                  </Label>
+                </div>
 
                 {/* Search Input - Pushed to the right */}
                 <div className="relative flex-1 md:grow-0 max-w-xs ml-auto">
