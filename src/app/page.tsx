@@ -111,67 +111,72 @@ function getHueFromHex(hex: string): number {
 
 function isColorInCategory(markerHex: string, categoryHex: string): boolean {
   const markerRgb = hexToRgb(markerHex);
-  const categoryRgb = hexToRgb(categoryHex);
+  // categoryHex is one of the base colors like #FF0000, so it should always be valid
+  // but we can check categoryRgb too for robustness if it were dynamic
+  const categoryRgb = hexToRgb(categoryHex); 
 
-  if (!markerRgb || !categoryRgb) return false;
+  if (!markerRgb || !categoryRgb) return false; // If either hex is invalid, cannot categorize
 
   const {r: mr, g: mg, b: mb} = markerRgb;
+  const markerHsl = rgbToHsl(mr, mg, mb);
+  const saturationThreshold = 0.15; 
 
   // Greyscale categories
-  if (categoryHex === "#808080" || categoryHex === "#000000" || categoryHex === "#FFFFFF") {
-     const luminance = 0.2126 * mr + 0.7152 * mg + 0.0722 * mb;
-     const hslMarker = rgbToHsl(mr, mg, mb);
-     const saturation = hslMarker.s;
-
-     if (categoryHex === "#000000") return luminance < 50 && saturation < 0.15;
-     if (categoryHex === "#FFFFFF") return luminance > 220 && saturation < 0.15;
-     if (categoryHex === "#808080") return saturation < 0.15 && luminance >=50 && luminance <=220;
+  // For greys, we generally look for low saturation.
+  const luminance = 0.2126 * mr + 0.7152 * mg + 0.0722 * mb; // Perceived brightness
+  
+  if (categoryHex === "#000000") { // Black
+      return luminance < 50 && markerHsl.s < saturationThreshold;
+  }
+  if (categoryHex === "#FFFFFF") { // White
+      return luminance > 220 && markerHsl.s < saturationThreshold;
+  }
+  if (categoryHex === "#808080") { // Grey
+      return markerHsl.s < saturationThreshold && luminance >= 50 && luminance <= 220;
   }
 
   // Color categories
-  const {r: cr, g: cg, b: cb} = categoryRgb;
-
-  const markerHsl = rgbToHsl(mr, mg, mb);
-  const categoryHsl = rgbToHsl(cr, cg, cb);
-
-  const saturationThreshold = 0.15; // Only consider colors with some saturation
-
+  // For chromatic colors, ensure they have enough saturation to be considered "colorful"
+  // and then check hue ranges.
   if (categoryHex === "#FF0000") { // Red
-    return (markerHsl.h < 15 || markerHsl.h >= 345) && markerHsl.s > saturationThreshold;
+    return (markerHsl.h < 15 || markerHsl.h >= 345) && markerHsl.s >= saturationThreshold;
   }
   if (categoryHex === "#FFA500") { // Orange
-    return (markerHsl.h >= 15 && markerHsl.h < 45) && markerHsl.s > saturationThreshold;
+    return (markerHsl.h >= 15 && markerHsl.h < 45) && markerHsl.s >= saturationThreshold;
   }
   if (categoryHex === "#FFFF00") { // Yellow
-    return (markerHsl.h >= 45 && markerHsl.h < 75) && markerHsl.s > saturationThreshold;
+    return (markerHsl.h >= 45 && markerHsl.h < 75) && markerHsl.s >= saturationThreshold;
   }
   if (categoryHex === "#008000") { // Green
-    return (markerHsl.h >= 75 && markerHsl.h < 165) && markerHsl.s > saturationThreshold;
+    return (markerHsl.h >= 75 && markerHsl.h < 165) && markerHsl.s >= saturationThreshold; // Wide green range
   }
   if (categoryHex === "#0000FF") { // Blue
-    return (markerHsl.h >= 195 && markerHsl.h < 255) && markerHsl.s > saturationThreshold;
+    return (markerHsl.h >= 195 && markerHsl.h < 255) && markerHsl.s >= saturationThreshold;
   }
   if (categoryHex === "#800080") { // Purple
-    return (markerHsl.h >= 255 && markerHsl.h < 315) && markerHsl.s > saturationThreshold;
+    return (markerHsl.h >= 255 && markerHsl.h < 315) && markerHsl.s >= saturationThreshold;
   }
-  if (categoryHex === "#FFC0CB") { // Pink
-    return ((markerHsl.h >= 315 && markerHsl.h < 345) || (markerHsl.h < 15 && markerHsl.l > 0.6)) && markerHsl.s > saturationThreshold;
+  if (categoryHex === "#FFC0CB") { // Pink (represents pink/magenta hues)
+    // Catches magentas and very light/desaturated reds that are perceived as pink
+    return ((markerHsl.h >= 315 && markerHsl.h < 345) || (markerHsl.h < 15 && markerHsl.l > 0.6)) && markerHsl.s >= saturationThreshold;
   }
-   if (categoryHex === "#A52A2A") { // Brown
+  if (categoryHex === "#A52A2A") { // Brown
     // Brown is tricky: low-ish saturation, mid-to-low lightness, in orange/red hue range
-    return ((markerHsl.h >= 0 && markerHsl.h < 45) || (markerHsl.h >=340 && markerHsl.h <=360))  && markerHsl.s > 0.1 && markerHsl.s < 0.6 && markerHsl.l < 0.6 && markerHsl.l > 0.1;
+    return ((markerHsl.h >= 0 && markerHsl.h < 45) || (markerHsl.h >=340 && markerHsl.h <=360))  && markerHsl.s >= 0.1 && markerHsl.s < 0.6 && markerHsl.l < 0.6 && markerHsl.l > 0.1;
   }
-
-  // Fallback for other potential categories, though the common ones are handled above
+  
+  // Fallback if categoryHex isn't one of the predefined ones (should not happen with COMMON_COLORS_FILTER)
+  const {r: cr, g: cg, b: cb} = categoryRgb; // This was defined earlier, but only used if logic reaches here
+  const categoryHsl = rgbToHsl(cr, cg, cb);
   let hueDiff = Math.abs(markerHsl.h - categoryHsl.h);
-  if (hueDiff > 180) hueDiff = 360 - hueDiff; // Handle hue wrapping around 360
-  const hueThreshold = 30; // Degrees
-  return hueDiff <= hueThreshold && markerHsl.s > saturationThreshold;
+  if (hueDiff > 180) hueDiff = 360 - hueDiff; 
+  const hueThreshold = 30; 
+  return hueDiff <= hueThreshold && markerHsl.s >= saturationThreshold;
 }
 
 
 export default function OhuhuHarmonyPage() {
-  const { markers: allMarkers, markerSets, addMarker, isInitialized, ownedSetIds } = useMarkerData();
+  const { markers: allMarkers, markerSets, addMarker, isInitialized, ownedSetIds, updateMarker } = useMarkerData();
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<SetFilterValue>(null);
   const [selectedColorCategory, setSelectedColorCategory] = useState<{ name: string; hex: string } | null>(null);
@@ -181,6 +186,7 @@ export default function OhuhuHarmonyPage() {
   const [activeSidebarContent, setActiveSidebarContent] = useState<ActiveSidebarContentType>(null);
 
   const [selectedMarkerForShades, setSelectedMarkerForShades] = useState<Marker | null>(null);
+  const [editingMarker, setEditingMarker] = useState<Marker | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const { toast } = useToast();
 
@@ -192,14 +198,14 @@ export default function OhuhuHarmonyPage() {
     // Apply set filter
     if (selectedSetId === '__owned__') {
       if (ownedSetIds.length === 0) {
-        tempResults = []; // Show no markers if "only owned" is selected but no sets are owned
+        tempResults = []; 
       } else {
         tempResults = tempResults.filter(marker => ownedSetIds.includes(marker.setId));
       }
-    } else if (selectedSetId) { // A specific set is chosen
+    } else if (selectedSetId) { 
       tempResults = tempResults.filter(marker => marker.setId === selectedSetId);
     }
-    // If selectedSetId is null, all markers are included initially
+    
 
     // Apply color category filter
     if (selectedColorCategory) {
@@ -232,19 +238,18 @@ export default function OhuhuHarmonyPage() {
           if (rgbA && rgbB) {
             const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
             const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
-
-            // Only apply secondary sort if they are chromatic colors (not greyscale)
-            // because greyscales are already sorted by lightness by getHueFromHex.
-            if (hslA.s >= 0.1 && hslB.s >= 0.1) {
-              // Sort by lightness: lighter (higher L) to darker (lower L)
-              // To achieve this, if A is lighter (hslA.l > hslB.l), A should come first.
-              // So, we return a negative value if hslA.l > hslB.l.
-              return hslB.l - hslA.l;
+            
+            // For chromatic colors with same hue, sort by lightness (lighter to darker)
+            if (hslA.s >= 0.1 && hslB.s >= 0.1) { 
+              return hslA.l - hslB.l; // Ascending lightness (lighter first)
             }
+             // For greys (which getHueFromHex already sorts by lightness effectively)
+            // or if HSL conversion isn't perfect, keep original relative order if hues are identical.
+            return 0;
           }
-          return 0; // Keep original relative order for greys with same lightness or if RGB conversion failed
+          return 0;
         }
-        return hueA - hueB; // Primary sort by effective hue
+        return hueA - hueB; 
       });
     } else if (sortOrder === 'id') {
       tempResults.sort((a, b) => a.id.localeCompare(b.id));
@@ -263,7 +268,7 @@ export default function OhuhuHarmonyPage() {
 
   const handleColorCategorySelect = (category: { name: string; hex: string } | null) => {
     if (selectedColorCategory?.name === category?.name) {
-      setSelectedColorCategory(null); // Toggle off if same category is clicked
+      setSelectedColorCategory(null); 
     } else {
       setSelectedColorCategory(category);
     }
@@ -285,6 +290,23 @@ export default function OhuhuHarmonyPage() {
     setActiveSidebarContent(null);
   };
 
+  const handleOpenEditDialog = (marker: Marker) => {
+    setEditingMarker(marker);
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditingMarker(null);
+  };
+
+  const handleSaveChanges = (markerId: string, updates: { name: string; hex: string }) => {
+    updateMarker(markerId, updates);
+    toast({
+      title: 'Marker Updated',
+      description: `${updates.name} (${markerId}) has been updated.`,
+    });
+    handleCloseEditDialog();
+  };
+
 
   if (!isInitialized) {
     return (
@@ -294,6 +316,7 @@ export default function OhuhuHarmonyPage() {
       </div>
     );
   }
+  const isPaletteView = activePageContent === 'palette';
 
   const renderMainPageContent = () => {
     switch (activePageContent) {
@@ -349,7 +372,6 @@ export default function OhuhuHarmonyPage() {
     return activeButton ? activeButton.name : "Ohuhu Harmony";
   };
 
-  const isPaletteView = activePageContent === 'palette';
 
   const sortOrderLabels: Record<SortOrder, string> = {
     hue: 'By Color',
