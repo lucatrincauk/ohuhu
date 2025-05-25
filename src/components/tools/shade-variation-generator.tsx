@@ -362,7 +362,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
         </Button>
 
         {isLoading && (
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 p-0">
             {[...Array(numShades)].map((_, i) => (
                <div key={i} className="flex flex-col items-center">
                 <div className="p-2 border rounded-md space-y-1 bg-muted/30 w-full">
@@ -381,15 +381,14 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
         {!isLoading && generatedShades.length > 0 && (
           <div className="mt-4 space-y-2">
             <h4 className="font-semibold">Suggested Shades:</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-2 gap-y-3">
+             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 p-0">
               {generatedShades.map((shade, index) => (
-                <div key={shade.id + '-' + index} className="flex flex-col items-center">
-                  <MarkerCard
-                    marker={{ id: shade.id, name: shade.name, hex: shade.hex, setId: shade.setId }}
-                    markerSets={markerSets}
-                    isOwned={ownedSetIds.includes(shade.setId)}
-                  />
-                </div>
+                <MarkerCard
+                  key={shade.id + '-' + index}
+                  marker={{ id: shade.id, name: shade.name, hex: shade.hex, setId: shade.setId }}
+                  markerSets={markerSets}
+                  isOwned={ownedSetIds.includes(shade.setId)}
+                />
               ))}
             </div>
           </div>
