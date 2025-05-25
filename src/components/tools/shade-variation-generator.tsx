@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateShadeVariations, type GenerateShadeVariationsInput, type ShadeVariationResult } from '@/ai/flows/shade-variation-generator';
@@ -32,7 +32,7 @@ interface ShadeVariationGeneratorProps {
   onClearSelectedMarker?: () => void;
 }
 
-// Helper functions for color conversion and hue extraction (copied from page.tsx)
+// Helper functions for color conversion and hue extraction
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   if (!hex) {
     return null;
@@ -84,15 +84,14 @@ function getHueFromHex(hex: string): number {
   if (!rgb) return 361; // Return a high value for sorting if hex is invalid
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
   if (hsl.s < 0.1) { // Low saturation (greyscale)
-    // Sort greys by lightness (dark to light), mapped to a high hue range
-    return 360 + (1 - hsl.l) * 100; // e.g., black (l=0) -> 460, white (l=1) -> 360
+    return 360 + (1 - hsl.l) * 100; 
   }
   return hsl.h;
 }
 
 
 export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, onClearSelectedMarker }: ShadeVariationGeneratorProps) {
-  const [baseColor, setBaseColor] = useState<string>(''); // Stores the hex of the selected base marker
+  const [baseColor, setBaseColor] = useState<string>(''); 
   const [numShades, setNumShades] = useState<number>(5);
   const [generatedShades, setGeneratedShades] = useState<ShadeVariationResult[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -101,6 +100,10 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
   const [selectedMarkerIdForTrigger, setSelectedMarkerIdForTrigger] = useState<string>("");
   const [searchScope, setSearchScope] = useState<'all' | 'owned'>('all');
   const { ownedSetIds, markerSets } = useMarkerData();
+
+  const sortedInventory = useMemo(() => {
+    return [...inventory].sort((a, b) => getHueFromHex(a.hex) - getHueFromHex(b.hex));
+  }, [inventory]);
 
 
   useEffect(() => {
@@ -206,12 +209,12 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
 
     try {
       const result = await generateShadeVariations(input);
-      const sortedShades = result.shades.sort((a, b) => {
+      const sortedByHueResults = result.shades.sort((a, b) => {
         const hueA = getHueFromHex(a.hex);
         const hueB = getHueFromHex(b.hex);
         return hueA - hueB;
       });
-      setGeneratedShades(sortedShades);
+      setGeneratedShades(sortedByHueResults);
       if (!result.shades || result.shades.length === 0) {
         toast({
           title: 'No Variations Found',
@@ -270,7 +273,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
                   <CommandList>
                     <CommandEmpty>No marker found.</CommandEmpty>
                     <CommandGroup>
-                      {inventory.map((marker) => (
+                      {sortedInventory.map((marker) => (
                         <CommandItem
                           key={marker.id}
                           value={`${marker.name} ${marker.id} ${marker.hex}`}
@@ -370,7 +373,6 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
                     <Skeleton className="h-3 w-1/2" />
                   </div>
                 </div>
-                {/* Removed Skeleton for similarity score */}
               </div>
             ))}
           </div>
@@ -387,7 +389,6 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
                     markerSets={markerSets}
                     isOwned={ownedSetIds.includes(shade.setId)}
                   />
-                  {/* Removed similarity score display */}
                 </div>
               ))}
             </div>

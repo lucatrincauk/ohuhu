@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,27 +29,83 @@ interface SimilarColorFinderProps {
 
 const hexColorRegex = /^#([0-9A-Fa-f]{3}){1,2}$/;
 
+// Helper functions for color conversion and hue extraction
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  if (!hex) {
+    return null;
+  }
+  let normalizedHex = hex.replace(/^#/, '');
+  if (normalizedHex.length === 3) {
+    normalizedHex = normalizedHex.split('').map(char => char + char).join('');
+  }
+  if (normalizedHex.length !== 6) {
+    return null;
+  }
+  const num = parseInt(normalizedHex, 16);
+  if (isNaN(num)) {
+    return null;
+  }
+  return {
+    r: (num >> 16) & 0xFF,
+    g: (num >>  8) & 0xFF,
+    b: (num >>  0) & 0xFF,
+  };
+}
+
+function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return { h: h * 360, s, l };
+}
+
+function getHueFromHex(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 361; // Return a high value for sorting if hex is invalid
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  if (hsl.s < 0.1) { // Low saturation (greyscale)
+    return 360 + (1 - hsl.l) * 100; 
+  }
+  return hsl.h;
+}
+
+
 export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
   const [targetColor, setTargetColor] = useState<string>('');
   const [similarColors, setSimilarColors] = useState<FindSimilarColorsOutput>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
   const [comboboxOpen, setComboboxOpen] = useState(false);
-  // Stores the ID of the marker selected via combobox to help display its name in the trigger
   const [selectedMarkerIdForTrigger, setSelectedMarkerIdForTrigger] = useState<string>("");
 
+  const sortedInventory = useMemo(() => {
+    return [...inventory].sort((a, b) => getHueFromHex(a.hex) - getHueFromHex(b.hex));
+  }, [inventory]);
 
   const handleMarkerSelect = (markerId: string) => {
     const selected = inventory.find(m => m.id === markerId);
     if (selected) {
       setTargetColor(selected.hex);
       setSelectedMarkerIdForTrigger(markerId);
-    } else {
-      // This case might happen if an invalid ID is passed or selection is cleared
-      // If clearing, ensure targetColor and selectedMarkerIdForTrigger are reset
-      // For now, assume a valid markerId is passed from combobox.
     }
-    setComboboxOpen(false); // Close combobox on selection
+    setComboboxOpen(false); 
   };
 
   const handleClearSelection = () => {
@@ -112,18 +168,16 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
     }
   };
   
-  // Effect to update selectedMarkerIdForTrigger if targetColor is changed manually
-  // and matches an inventory item, or clear it if no match.
   useEffect(() => {
     if (targetColor && hexColorRegex.test(targetColor)) {
       const matchingMarker = inventory.find(m => m.hex.toLowerCase() === targetColor.toLowerCase());
       if (matchingMarker) {
         setSelectedMarkerIdForTrigger(matchingMarker.id);
       } else {
-        setSelectedMarkerIdForTrigger(""); // targetColor is custom or invalid, no matching inventory item
+        setSelectedMarkerIdForTrigger(""); 
       }
     } else if (!targetColor) {
-       setSelectedMarkerIdForTrigger(""); // targetColor cleared
+       setSelectedMarkerIdForTrigger(""); 
     }
   }, [targetColor, inventory]);
 
@@ -168,10 +222,10 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
                   <CommandList>
                     <CommandEmpty>No marker found.</CommandEmpty>
                     <CommandGroup>
-                      {inventory.map((marker) => (
+                      {sortedInventory.map((marker) => (
                         <CommandItem
                           key={marker.id}
-                          value={`${marker.name} ${marker.id} ${marker.hex}`} // Value for searching
+                          value={`${marker.name} ${marker.id} ${marker.hex}`} 
                           onSelect={() => {
                             handleMarkerSelect(marker.id);
                           }}
@@ -194,7 +248,7 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
               </PopoverContent>
             </Popover>
 
-            {targetColor && ( // Show clear button only if a target color (from any source) is set
+            {targetColor && ( 
               <Button variant="ghost" size="sm" onClick={handleClearSelection} disabled={isLoading}>Clear</Button>
             )}
           </div>
@@ -205,7 +259,6 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
               onChange={(e) => {
                 const newHex = e.target.value.toUpperCase();
                 setTargetColor(newHex);
-                // setSelectedMarkerIdForTrigger is handled by useEffect above
               }}
               placeholder="Or enter #RRGGBB"
               className="flex-grow"
@@ -218,7 +271,6 @@ export function SimilarColorFinder({ inventory }: SimilarColorFinderProps) {
               onChange={(e) => {
                 const newHex = e.target.value.toUpperCase();
                 setTargetColor(newHex);
-                // setSelectedMarkerIdForTrigger is handled by useEffect above
               }}
               disabled={isLoading}
               className="h-10 w-10 p-1 border rounded-md cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
