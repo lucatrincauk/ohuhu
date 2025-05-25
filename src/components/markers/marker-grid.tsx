@@ -4,7 +4,7 @@ import { MarkerCard } from './marker-card';
 
 interface MarkerGridProps {
   markers: Marker[];
-  markerSets: MarkerSet[]; // Added markerSets prop
+  markerSets: MarkerSet[];
   onSelectMarkerForShades?: (marker: Marker) => void;
   ownedSetIds?: string[];
 }
@@ -20,15 +20,18 @@ export function MarkerGrid({ markers, markerSets, onSelectMarkerForShades, owned
     );
   }
 
+  // Ensure ownedSetIds is treated as an empty array if undefined/null for consistent .includes() behavior
+  const currentOwnedSetIds = ownedSetIds || [];
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 p-2 md:p-3"> {/* Reduced gap and padding */}
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 p-2 md:p-3">
       {markers.map((marker) => (
         <MarkerCard
           key={marker.id}
           marker={marker}
-          markerSets={markerSets} // Pass markerSets
+          markerSets={markerSets}
           onSelectForShades={onSelectMarkerForShades}
-          isOwned={ownedSetIds ? ownedSetIds.includes(marker.setId) : true}
+          isOwned={currentOwnedSetIds.includes(marker.setId)}
         />
       ))}
     </div>
