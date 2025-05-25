@@ -84,7 +84,7 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
   const l = (max + min) / 2;
 
   if (max === min) {
-    h = s = 0;
+    h = s = 0; // achromatic
   } else {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -111,67 +111,60 @@ function getHueFromHex(hex: string): number {
 
 function isColorInCategory(markerHex: string, categoryHex: string): boolean {
   const markerRgb = hexToRgb(markerHex);
-  // categoryHex is one of the base colors like #FF0000, so it should always be valid
-  // but we can check categoryRgb too for robustness if it were dynamic
-  const categoryRgb = hexToRgb(categoryHex); 
+  if (!markerRgb) return false;
 
-  if (!markerRgb || !categoryRgb) return false; // If either hex is invalid, cannot categorize
-
-  const {r: mr, g: mg, b: mb} = markerRgb;
+  const { r: mr, g: mg, b: mb } = markerRgb;
   const markerHsl = rgbToHsl(mr, mg, mb);
-  const saturationThreshold = 0.15; 
-
-  // Greyscale categories
-  // For greys, we generally look for low saturation.
-  const luminance = 0.2126 * mr + 0.7152 * mg + 0.0722 * mb; // Perceived brightness
   
+  const sThresholdChromatic = 0.12; // Min saturation to be considered a "color" vs grey
+  const sThresholdGrey = 0.20;    // Max saturation to be considered for "grey" categories
+
+  // Greyscale checks first
   if (categoryHex === "#000000") { // Black
-      return luminance < 50 && markerHsl.s < saturationThreshold;
+    return markerHsl.l < 0.20 && markerHsl.s < sThresholdGrey;
   }
   if (categoryHex === "#FFFFFF") { // White
-      return luminance > 220 && markerHsl.s < saturationThreshold;
+    return markerHsl.l > 0.90 && markerHsl.s < sThresholdGrey;
   }
   if (categoryHex === "#808080") { // Grey
-      return markerHsl.s < saturationThreshold && luminance >= 50 && luminance <= 220;
+    return markerHsl.s < sThresholdGrey && (markerHsl.l >= 0.20 && markerHsl.l <= 0.90);
   }
 
-  // Color categories
-  // For chromatic colors, ensure they have enough saturation to be considered "colorful"
-  // and then check hue ranges.
+  // Chromatic color checks
+  // Each chromatic category now checks its own saturation requirement.
   if (categoryHex === "#FF0000") { // Red
-    return (markerHsl.h < 15 || markerHsl.h >= 345) && markerHsl.s >= saturationThreshold;
+    return (markerHsl.h >= 335 || markerHsl.h <= 20) && markerHsl.s >= sThresholdChromatic;
   }
   if (categoryHex === "#FFA500") { // Orange
-    return (markerHsl.h >= 15 && markerHsl.h < 45) && markerHsl.s >= saturationThreshold;
+    return (markerHsl.h > 20 && markerHsl.h <= 50) && markerHsl.s >= sThresholdChromatic;
   }
   if (categoryHex === "#FFFF00") { // Yellow
-    return (markerHsl.h >= 45 && markerHsl.h < 75) && markerHsl.s >= saturationThreshold;
+    return (markerHsl.h > 50 && markerHsl.h <= 70) && markerHsl.s >= sThresholdChromatic; 
   }
   if (categoryHex === "#008000") { // Green
-    return (markerHsl.h >= 75 && markerHsl.h < 165) && markerHsl.s >= saturationThreshold; // Wide green range
+    return (markerHsl.h > 70 && markerHsl.h <= 160) && markerHsl.s >= sThresholdChromatic;
   }
-  if (categoryHex === "#0000FF") { // Blue
-    return (markerHsl.h >= 195 && markerHsl.h < 255) && markerHsl.s >= saturationThreshold;
+  if (categoryHex === "#0000FF") { // Blue (covers a wide range including cyan-blues to violet-blues)
+    return (markerHsl.h > 160 && markerHsl.h <= 260) && markerHsl.s >= sThresholdChromatic;
   }
-  if (categoryHex === "#800080") { // Purple
-    return (markerHsl.h >= 255 && markerHsl.h < 315) && markerHsl.s >= saturationThreshold;
+  if (categoryHex === "#800080") { // Purple (violets and magentas)
+    return (markerHsl.h > 260 && markerHsl.h < 335) && markerHsl.s >= sThresholdChromatic;
   }
-  if (categoryHex === "#FFC0CB") { // Pink (represents pink/magenta hues)
-    // Catches magentas and very light/desaturated reds that are perceived as pink
-    return ((markerHsl.h >= 315 && markerHsl.h < 345) || (markerHsl.h < 15 && markerHsl.l > 0.6)) && markerHsl.s >= saturationThreshold;
+  if (categoryHex === "#FFC0CB") { // Pink
+    return (
+        ( (markerHsl.h >= 320 || markerHsl.h <= 15) && markerHsl.l >= 0.60 ) || 
+        ( markerHsl.h >= 300 && markerHsl.h < 335 && markerHsl.l >= 0.55 ) 
+    ) && markerHsl.s >= sThresholdChromatic;
   }
   if (categoryHex === "#A52A2A") { // Brown
-    // Brown is tricky: low-ish saturation, mid-to-low lightness, in orange/red hue range
-    return ((markerHsl.h >= 0 && markerHsl.h < 45) || (markerHsl.h >=340 && markerHsl.h <=360))  && markerHsl.s >= 0.1 && markerHsl.s < 0.6 && markerHsl.l < 0.6 && markerHsl.l > 0.1;
+    return (
+      (markerHsl.h >= 10 && markerHsl.h <= 50) && 
+      markerHsl.s >= 0.05 && markerHsl.s <= 0.70 && 
+      markerHsl.l >= 0.10 && markerHsl.l <= 0.60   
+    );
   }
-  
-  // Fallback if categoryHex isn't one of the predefined ones (should not happen with COMMON_COLORS_FILTER)
-  const {r: cr, g: cg, b: cb} = categoryRgb; // This was defined earlier, but only used if logic reaches here
-  const categoryHsl = rgbToHsl(cr, cg, cb);
-  let hueDiff = Math.abs(markerHsl.h - categoryHsl.h);
-  if (hueDiff > 180) hueDiff = 360 - hueDiff; 
-  const hueThreshold = 30; 
-  return hueDiff <= hueThreshold && markerHsl.s >= saturationThreshold;
+
+  return false; // Fallback if categoryHex doesn't match any known filter
 }
 
 
