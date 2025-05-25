@@ -4,22 +4,35 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { ColorSwatch } from '@/components/core/color-swatch';
 import { Button } from '@/components/ui/button';
 import { Palette, Pencil } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface MarkerCardProps {
   marker: Marker;
   onSelectForShades?: (marker: Marker) => void;
   onEditMarker?: (marker: Marker) => void;
+  isOwned?: boolean;
 }
 
-export function MarkerCard({ marker, onSelectForShades, onEditMarker }: MarkerCardProps) {
+export function MarkerCard({ marker, onSelectForShades, onEditMarker, isOwned = true }: MarkerCardProps) {
   return (
-    <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
+    <Card className={cn(
+      "flex flex-col overflow-hidden transition-all hover:shadow-lg relative",
+      { "opacity-70 border-dashed border-muted-foreground/30": !isOwned }
+    )}>
       <CardHeader className="p-0">
         <div
           className="h-24 w-full"
           style={{ backgroundColor: marker.hex }}
           aria-label={`Color preview for ${marker.name}`}
         />
+        {!isOwned && (
+          <div 
+            className="absolute top-1 right-1 bg-secondary text-secondary-foreground/80 px-1.5 py-0.5 rounded-sm text-[10px] leading-none shadow"
+            title="This marker belongs to a set you do not own."
+          >
+            Not Owned
+          </div>
+        )}
       </CardHeader>
       <CardContent className="flex-grow p-3">
         <CardTitle className="mb-1 text-base">{marker.name}</CardTitle>

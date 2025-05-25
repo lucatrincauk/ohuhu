@@ -7,30 +7,38 @@ import { useState, useEffect, useCallback } from 'react';
 
 const MARKERS_STORAGE_KEY = 'ohuhuHarmony_markers';
 const SETS_STORAGE_KEY = 'ohuhuHarmony_markerSets';
+const OWNED_SETS_STORAGE_KEY = 'ohuhuHarmony_ownedSetIds';
 
 export function useMarkerData() {
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [markerSets, setMarkerSets] = useState<MarkerSet[]>([]);
+  const [ownedSetIds, setOwnedSetIds] = useState<string[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     try {
-      // Always initialize from constants to ensure the latest code changes are reflected.
-      // This will overwrite any existing markers in local storage with the ones from constants.ts.
       setMarkers(INITIAL_MARKERS);
       localStorage.setItem(MARKERS_STORAGE_KEY, JSON.stringify(INITIAL_MARKERS));
 
-      // Do the same for marker sets for consistency.
       setMarkerSets(INITIAL_MARKER_SETS);
       localStorage.setItem(SETS_STORAGE_KEY, JSON.stringify(INITIAL_MARKER_SETS));
+
+      const storedOwnedSetIds = localStorage.getItem(OWNED_SETS_STORAGE_KEY);
+      if (storedOwnedSetIds) {
+        setOwnedSetIds(JSON.parse(storedOwnedSetIds));
+      } else {
+        setOwnedSetIds([]); // Default to owning no sets
+        localStorage.setItem(OWNED_SETS_STORAGE_KEY, JSON.stringify([]));
+      }
+
     } catch (error) {
-      console.error("Failed to access localStorage or write initial data:", error);
-      // Fallback if localStorage operations fail, though setMarkers/setMarkerSets should still populate state.
+      console.error("Failed to access localStorage or initialize data:", error);
       setMarkers(INITIAL_MARKERS);
       setMarkerSets(INITIAL_MARKER_SETS);
+      setOwnedSetIds([]);
     }
     setIsInitialized(true);
-  }, []); // Empty dependency array ensures this runs once on mount after initial render.
+  }, []);
 
   const updateLocalStorage = useCallback((key: string, data: any) => {
     try {
@@ -44,8 +52,6 @@ export function useMarkerData() {
     const markerWithId: Marker = { ...newMarker, id: newMarker.id || `custom-${Date.now()}` };
     setMarkers(prevMarkers => {
       const updatedMarkers = [...prevMarkers, markerWithId];
-      // Markers added during the session will be saved to local storage,
-      // but will be overwritten by INITIAL_MARKERS on the next full app load due to the useEffect logic.
       updateLocalStorage(MARKERS_STORAGE_KEY, updatedMarkers);
       return updatedMarkers;
     });
@@ -69,10 +75,14 @@ export function useMarkerData() {
     const setWithId: MarkerSet = { ...newSet, id: newSet.id || `set-${Date.now()}` };
     setMarkerSets(prevSets => {
       const updatedSets = [...prevSets, setWithId];
-      // Similar to addMarker, changes to sets will be session-specific.
       updateLocalStorage(SETS_STORAGE_KEY, updatedSets);
       return updatedSets;
     });
+  }, [updateLocalStorage]);
+
+  const updateOwnedSetIds = useCallback((newOwnedSetIds: string[]) => {
+    setOwnedSetIds(newOwnedSetIds);
+    updateLocalStorage(OWNED_SETS_STORAGE_KEY, newOwnedSetIds);
   }, [updateLocalStorage]);
 
   return {
@@ -83,6 +93,8 @@ export function useMarkerData() {
     updateMarker,
     getMarkerById,
     isInitialized,
-    setMarkers // For filtering purposes
+    setMarkers, // For filtering purposes
+    ownedSetIds,
+    updateOwnedSetIds,
   };
 }
