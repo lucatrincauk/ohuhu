@@ -2,11 +2,11 @@
 import type { Marker, MarkerSet } from './types';
 
 export const INITIAL_MARKER_SETS: MarkerSet[] = [
-  { id: 'ohuhu-honolulu-b', name: 'Ohuhu Honolulu 120 Set' },
-  { id: 'ohuhu-104', name: 'Ohuhu 104 Set' },
+  { id: 'ohuhu-honolulu-b', name: 'Honolulu 120' },
+  { id: 'ohuhu-104', name: 'Honolulu 104 Set' },
 ];
 
-// User-provided list of 120 marker IDs for the Ohuhu Honolulu 120 Set
+// User-provided list of 120 marker IDs for the Honolulu 120
 const honolulu120MarkerIDs: string[] = [
   'B64', 'BG1', 'BG2', 'BG3', 'BG4', 'BG5', 'BG6', 'BG7', 'BG8', 'BG9', 'BG68',
   'BGII03', 'BGII05', 'BGII09', 'BR1', 'BR2', 'BR3', 'CG2', 'CG5', 'CGII00',
@@ -38,10 +38,10 @@ const ohuhu104MarkerIDs: string[] = [
 ];
 
 // Data for known marker IDs to pull existing names/hex when IDs match.
-// Updated based on Ohuhu Honolulu 120 Set image (provided by user)
+// Updated based on Honolulu 120 image (provided by user)
 // and existing Ohuhu 104 data. Honolulu data takes precedence for shared IDs.
 const existingMarkerData: Record<string, { name: string; hex: string }> = {
-  // Ohuhu Honolulu 120 Set + Blender (Names & Hex from image)
+  // Honolulu 120 + Blender (Names & Hex from image)
   'Y1': { name: 'Pastel Yellow', hex: '#FEF9CC' },
   'Y2': { name: 'Sunflower', hex: '#FFDA00' },
   'Y3': { name: 'Barium Yellow', hex: '#FDEE6C' },
