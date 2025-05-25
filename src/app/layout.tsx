@@ -1,8 +1,10 @@
+
 import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { MarkerDataProvider } from '@/contexts/marker-data-context';
 
 const geistSans = GeistSans;
 const geistMono = GeistMono;
@@ -20,8 +22,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
-        {children}
-        <Toaster />
+        <MarkerDataProvider>
+          {children}
+          <Toaster />
+        </MarkerDataProvider>
       </body>
     </html>
   );
