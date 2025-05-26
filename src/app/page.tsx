@@ -44,7 +44,7 @@ import { cn } from '@/lib/utils';
 
 type ActivePageContentType = 'palette' | 'explorer' | 'sets';
 type SortOrder = 'hue' | 'id' | 'name';
-type SetFilterValue = string | null | '__owned__';
+type SetFilterValue = string | null | '__owned__' | '__missing__';
 
 
 // Helper functions for color conversion and hue extraction
@@ -187,6 +187,13 @@ export default function OhuhuHarmonyPage() {
       } else {
         tempResults = tempResults.filter(marker => marker.setIds.some(sid => ownedSetIds.includes(sid)));
       }
+    } else if (selectedSetId === '__missing__') {
+      if (ownedSetIds.length === 0) {
+        // If no sets are owned, all markers are "missing" from the owned collection.
+        // This is effectively showing all markers.
+      } else {
+        tempResults = tempResults.filter(marker => !marker.setIds.some(sid => ownedSetIds.includes(sid)));
+      }
     } else if (selectedSetId) { 
       tempResults = tempResults.filter(marker => marker.setIds.includes(selectedSetId));
     }
@@ -224,11 +231,9 @@ export default function OhuhuHarmonyPage() {
             const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
             const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
             
-            // If both colors are chromatic (not greyscale) and have same hue, sort by lightness
             if (hslA.s >= 0.1 && hslB.s >= 0.1) { 
               return hslA.l - hslB.l; 
             }
-            // For greys or one grey/one color, the hue sort (which includes lightness for greys) is primary
             return 0;
           }
           return 0;
@@ -348,6 +353,9 @@ export default function OhuhuHarmonyPage() {
   const getSetFilterLabel = () => {
     if (selectedSetId === '__owned__') {
       return "Set: Only Owned";
+    }
+    if (selectedSetId === '__missing__') {
+      return "Set: Missing Only";
     }
     if (selectedSetId) {
       const set = markerSets.find(s => s.id === selectedSetId);
@@ -479,6 +487,17 @@ export default function OhuhuHarmonyPage() {
                     >
                       Only My Owned Sets
                     </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={selectedSetId === '__missing__'}
+                       onSelect={(event) => {
+                        event.preventDefault();
+                        handleSetFilterChange(selectedSetId === '__missing__' ? null : '__missing__');
+                      }}
+                    >
+                      Only Show Missing Markers
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>Individual Sets</DropdownMenuLabel>
                     {markerSets.map((set) => (
                       <DropdownMenuCheckboxItem
                         key={set.id}

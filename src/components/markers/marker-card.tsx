@@ -17,12 +17,13 @@ export function MarkerCard({ marker, markerSets, onSelectMarkerForShades, isOwne
   
   let setNameDisplay = 'Unknown Set';
   if (marker.setIds && marker.setIds.length > 0) {
-    setNameDisplay = marker.setIds
+    const setNames = marker.setIds
       .map(id => {
         const set = markerSets.find(s => s.id === id);
         return set ? set.name : id; // Fallback to ID
       })
       .join(', ');
+    setNameDisplay = setNames;
   }
 
 
@@ -48,8 +49,8 @@ export function MarkerCard({ marker, markerSets, onSelectMarkerForShades, isOwne
       </CardHeader>
       <CardContent className="flex-grow p-2 space-y-0.5"> 
         <CardTitle className="mb-0.5 text-sm leading-tight">{marker.name}</CardTitle> 
-        <p className="text-xs text-muted-foreground">ID: {marker.id}</p>
-        {/* Removed set information display from here */}
+        <p className="text-xs text-muted-foreground">{marker.id}</p>
+        {/* Set information was removed in a previous request */}
       </CardContent>
       <CardFooter className="p-2 pt-0 flex flex-col space-y-1"> 
         {onSelectMarkerForShades && (
