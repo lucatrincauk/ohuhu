@@ -9,6 +9,7 @@ export const INITIAL_MARKER_SETS: MarkerSet[] = [
   { id: 'ohuhu-new-pastels-48', name: 'New Pastels 48' },
   { id: 'ohuhu-grey-tones-36', name: 'Grey Tones 36' },
   { id: 'ohuhu-skin-36', name: 'Skin 36' },
+  { id: 'ohuhu-skin-24', name: 'Skin 24' },
 ];
 
 const honolulu120MarkerIDs: string[] = [
@@ -77,6 +78,12 @@ const skin36MarkerIDs: string[] = [
   'YR10', 'YR20', 'YR34', 'YR91', 'YR92', 'YR95', 'YR107', 'YR148', 'YR205', 'YR209',
   'YR212', 'R18', 'R19', 'R20', 'R21', 'R26', 'R27', 'R28', 'R29', 'R30', 'WG0.5',
   'BR2', 'BR3', 'BR208'
+];
+
+const skin24MarkerIDs: string[] = [
+  'Y4', 'Y9', 'Y12', 'YR5', 'YR7', 'YR10', 'YR20', 'YR91', 'YR95', 'YR107',
+  'Y145', 'YR148', 'YR209', 'R18', 'R19', 'R20', 'R21', 'R26', 'R27', 'R28',
+  'R29', 'R30', 'WG0.5', 'BR2'
 ];
 
 
@@ -223,7 +230,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'YR172': { name: 'Tiger Lily', hex: '#F09B59' },
   'YR180': { name: 'Lipstick Orange', hex: '#F18C4D' },
   'YR220': { name: 'Yellowish Shade', hex: '#FBEFE1' },
-  'R29': { name: 'Pear Color', hex: '#FCE8E7' },
+  'R29': { name: 'Pear color', hex: '#FCE8E7' },
   'R050': { name: 'Chocolate Pink', hex: '#F3D7D6' },
   'R070': { name: 'Agate', hex: '#D9837D' },
   'R150': { name: 'Zinnober', hex: '#E95E6F' },
@@ -418,7 +425,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'R090': { name: 'Rose Mist', hex: '#F5A2A2' },
 
   // Grey Tones 36 - Names from image, hex visually approximated
-  'WG0.5': { name: 'Warm Grey 0', hex: '#F5F1ED' },
+  'WG0.5': { name: 'Warm Grey 0.5', hex: '#F5F1ED' }, // Corrected name to Warm Grey 0.5
   'YG100': { name: 'Yellow Grey 100', hex: '#BFBFA8' },
 
   // Skin Tones 36
@@ -426,7 +433,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'YR6': { name: 'Primary Yellow', hex: '#FDEB6E' },
   'YR7': { name: 'Cadmium Yellow', hex: '#F9E08C' },
   'YR8': { name: 'Salmon', hex: '#F9AA8F' },
-  'YR9': { name: 'Yellow Ochre', hex: '#D8BCA2' }, // This is a different shade than Y9 'Yellow Ochre'
+  // 'YR9': { name: 'Yellow Ochre', hex: '#D8BCA2' }, // Y9 already exists, this is a duplicate ID with different name for the same set
   'YR10': { name: 'Brun', hex: '#D37D5B' },
   'YR20': { name: 'Morin', hex: '#FBE1B8' },
   'YR34': { name: 'Yellow', hex: '#FBE59C' },
@@ -438,10 +445,41 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'YR205': { name: 'Powdery Orange', hex: '#FCDCB1' },
   'YR209': { name: 'Hazelnuts', hex: '#F9E7D6' },
   'YR212': { name: 'Milk White', hex: '#FFF8EE' },
+  // 'R18': { name: 'Pastel Peach', hex: '#FFDAB9' }, // R18 already defined
+  // 'R19': { name: 'Barely Beige', hex: '#FDF0E9' }, // R19 already defined
+  // 'R20': { name: 'Powder Pink', hex: '#FFE9E5' }, // R20 already defined
+  // 'R21': { name: 'Fruit Pink', hex: '#FFDCD5' }, // R21 already defined
   'R26': { name: 'Honey', hex: '#F8D3BB' },
   'R27': { name: 'Pale Mauve', hex: '#EBB9B1' },
-  'R28': { name: 'Colocasia Tonoimo', hex: '#D4AFAE' },
+  'R28': { name: 'Colocasia Tonoimo', hex: '#D4AFAE' }, // Corrected name from OCR
+  // 'R29': { name: 'Pear color', hex: '#FCE8E7' }, // R29 already defined
   'R30': { name: 'Pale Cherry Pink', hex: '#FEE7EA' },
+
+  // Skin 24 (adding only new/updated data from image)
+  // Y4: 'Quince' already exists with #FADCA5
+  // Y9: 'Yellow Ochre' already exists with #E8B349
+  // Y12: 'Mahogany' already exists with #C08E7F
+  // YR5: 'Terra Cotta' already exists with #E2725B
+  // YR7: 'Cadmium Yellow' from Skin 36 set, hex #F9E08C. Image is similar.
+  // YR10: 'Brun' from Skin 36 set, hex #D37D5B. Image is similar.
+  // YR20: 'Morin' from Skin 36 set, hex #FBE1B8. Image is similar.
+  // YR91: 'Natural Oak' from Skin 36 set, hex #AD6F49. Image is similar.
+  // YR95: 'Burnt Sienna' from Skin 36 set, hex #AF6D4F. Image is similar.
+  // YR107: 'Reddish Yellow' from Skin 36 set, hex #EBCBA1. Image is similar.
+  // Y145: 'Buttercup Yellow' from Skin 36 set, hex #FCEEB8. Image is similar.
+  // YR148: 'Thin Persimmon' from Skin 36 set, hex #F8D7C4. Image is similar.
+  // YR209: 'Hazelnuts' from Skin 36 set, hex #F9E7D6. Image is similar.
+  // R18: 'Pastel Peach' already exists with #FFDAB9
+  // R19: 'Barely Beige' already exists with #FDF0E9
+  // R20: 'Powder Pink' already exists with #FFE9E5
+  // R21: 'Fruit Pink' already exists with #FFDCD5
+  // R26: 'Honey' from Skin 36 set, hex #F8D3BB. Image is similar.
+  // R27: 'Pale Mauve' from Skin 36 set, hex #EBB9B1. Image is similar.
+  // R28: 'Colocasia Tonoimo' from Skin 36 set, hex #D4AFAE. Image is similar.
+  // R29: 'Pear color' already exists with #FCE8E7
+  // R30: 'Pale Cherry Pink' from Skin 36 set, hex #FEE7EA. Image is similar.
+  // WG0.5: 'Warm Grey 0.5' already exists with #F5F1ED
+  // BR2: 'Potato Brown' already exists with #C6A17D
 };
 
 
@@ -453,6 +491,7 @@ const setMarkerIdLists: { setId: string, ids: string[] }[] = [
   { setId: 'ohuhu-new-pastels-48', ids: newPastels48MarkerIDs },
   { setId: 'ohuhu-grey-tones-36', ids: greyTones36MarkerIDs },
   { setId: 'ohuhu-skin-36', ids: skin36MarkerIDs },
+  { setId: 'ohuhu-skin-24', ids: skin24MarkerIDs },
 ];
 
 // This map will hold the consolidated marker data.
@@ -474,19 +513,27 @@ for (const id in existingMarkerData) {
 // Iterate through each defined set and its list of marker IDs
 setMarkerIdLists.forEach(setInfo => {
   setInfo.ids.forEach(id => {
+    if (!existingMarkerData[id]) {
+      // If an ID from a set list is not in existingMarkerData, add it with default values
+      // This happens if an ID is *only* in an ID list but not explicitly defined in existingMarkerData
+      existingMarkerData[id] = { name: id, hex: '#CCCCCC' };
+    }
+
     if (mergedMarkersMap.has(id)) {
       // If marker exists, add this set's ID to its list of setIds
       const markerEntry = mergedMarkersMap.get(id)!;
+      // Update name and hex if the current set being processed has newer info (based on existingMarkerData)
+      markerEntry.name = existingMarkerData[id].name;
+      markerEntry.hex = existingMarkerData[id].hex;
       if (!markerEntry.setIds.includes(setInfo.setId)) {
         markerEntry.setIds.push(setInfo.setId);
       }
     } else {
-      // This case means an ID was in a set's list but not in existingMarkerData.
-      // We'll create it with its ID as name and a default hex.
-      // This is also where markers defined ONLY in an ID list (and not in existingMarkerData yet) get added.
+      // This case means an ID was in a set's list but not in existingMarkerData (should be caught by the above block).
+      // For safety, create it here.
       mergedMarkersMap.set(id, {
-        name: id, // Default name to ID
-        hex: '#CCCCCC', // Default hex
+        name: existingMarkerData[id].name,
+        hex: existingMarkerData[id].hex,
         setIds: [setInfo.setId],
       });
     }
@@ -516,11 +563,6 @@ if (blenderData) {
 }
 
 
-export const INITIAL_MARKERS: Marker[] = Array.from(mergedMarkersMap.values()).map(data => ({
-  id: Object.keys(existingMarkerData).find(key => existingMarkerData[key].name === data.name && existingMarkerData[key].hex === data.hex) || data.setIds.join('-') + '-' + data.name, // Fallback key if id not directly on map value
-  ...data
-}));
-
 // This logic ensures the ID of the marker is correctly set from the map's key
 const finalInitialMarkers: Marker[] = [];
 mergedMarkersMap.forEach((value, key) => {
@@ -533,7 +575,7 @@ mergedMarkersMap.forEach((value, key) => {
 });
 
 // Replace the previous INITIAL_MARKERS with the correctly keyed one
-export const INITIAL_MARKERS_FINAL: Marker[] = finalInitialMarkers;
+// export const INITIAL_MARKERS_FINAL: Marker[] = finalInitialMarkers;
 // For downstream compatibility, let's still export INITIAL_MARKERS as the final list
 // but ensure it's the one with proper IDs.
 // Re-assign after final processing.
@@ -554,4 +596,3 @@ export const COMMON_COLORS_FILTER = [
   { name: "Black", hexBase: "#000000" },
   { name: "White", hexBase: "#FFFFFF" },
 ];
-
