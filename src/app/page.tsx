@@ -278,6 +278,13 @@ export default function OhuhuHarmonyPage() {
     setActiveSidebarContent(null);
   };
 
+  const handleNavigateToPaletteWithSetFilter = (setId: string) => {
+    setActivePageContent('palette');
+    setSelectedSetId(setId);
+    setSelectedColorCategory(null); // Reset color filter
+    setSearchTerm(''); // Reset search term
+  };
+
 
   if (!isInitialized) {
     return (
@@ -305,7 +312,7 @@ export default function OhuhuHarmonyPage() {
       case 'shades':
         return <div className="p-4 md:p-6 max-w-2xl mx-auto"><ShadeVariationGenerator inventory={allMarkers} selectedMarkerForShades={selectedMarkerForShades} onClearSelectedMarker={clearSelectedMarkerForShades} /></div>;
       case 'sets':
-        return <ManageSetsPage />;
+        return <ManageSetsPage onViewSetActive={handleNavigateToPaletteWithSetFilter} />;
       default:
         return <MarkerGrid
                   markers={displayedMarkers}
