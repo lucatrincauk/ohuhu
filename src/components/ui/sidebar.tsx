@@ -4,7 +4,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft, Palette } from "lucide-react" // Added Palette
+import { Menu, Palette } from "lucide-react" // Changed PanelLeft to Menu
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -157,8 +157,6 @@ const SidebarProvider = React.forwardRef<
 )
 SidebarProvider.displayName = "SidebarProvider"
 
-// Unique ID for the sidebar title, to be used by aria-labelledby or internally by SheetTitle
-// export const SIDEBAR_TITLE_ID = "ohuhu-harmony-sidebar-sheet-title"; // No longer needed with direct SheetTitle usage
 
 const Sidebar = React.forwardRef<
   HTMLDivElement,
@@ -198,6 +196,7 @@ const Sidebar = React.forwardRef<
 
     if (isMobile) {
       const childrenArray = React.Children.toArray(children);
+      // Filter out SidebarHeader to avoid duplicate rendering of the logo/title
       const mainContentChildren = childrenArray.filter(
         (child) => React.isValidElement(child) && ((child.type as any).displayName !== "SidebarHeader")
       );
@@ -208,7 +207,7 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden flex flex-col" 
+            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden flex flex-col"
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -216,6 +215,7 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
+            {/* Explicitly add SheetHeader and SheetTitle for mobile */}
             <UiSheetHeader className="p-4 border-b flex items-center gap-2">
               <Palette className='h-8 w-8 text-primary' />
               <UiSheetTitle className="text-xl font-semibold text-foreground">
@@ -295,7 +295,7 @@ const SidebarTrigger = React.forwardRef<
       }}
       {...props}
     >
-      <PanelLeft />
+      <Menu /> {/* Changed from PanelLeft to Menu */}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )
@@ -779,6 +779,4 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
-  // SIDEBAR_TITLE_ID, // No longer exporting as it's handled internally by UiSheetTitle
 }
-

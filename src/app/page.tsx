@@ -37,8 +37,6 @@ import {
   DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { ColorSwatch } from '@/components/core/color-swatch';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 
@@ -404,10 +402,7 @@ export default function OhuhuHarmonyPage() {
         <SidebarInset className="flex-1 bg-background flex flex-col">
           <header className="sticky top-0 z-10 flex h-auto flex-col gap-2 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 py-3">
             <div className="flex h-10 items-center">
-              <SidebarTrigger className="md:hidden mr-2">
-                  <Menu />
-                  <span className="sr-only">Toggle Sidebar</span>
-              </SidebarTrigger>
+              <SidebarTrigger className="md:hidden mr-2" />
               <div className="flex items-center">
                 <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">{getHeaderTitle()}</h2>
                 {isPaletteView && (
