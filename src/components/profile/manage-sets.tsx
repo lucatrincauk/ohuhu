@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Library, Palette, Search, ExternalLink } from 'lucide-react';
+import { Library, Palette, Search } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge'; // Import Badge
 
 interface ManageSetsPageProps {
   onViewSetActive: (setId: string) => void;
@@ -76,13 +77,13 @@ export function ManageSetsPage({ onViewSetActive }: ManageSetsPageProps) {
             />
           </div>
         </CardHeader>
-        <CardContent className="space-y-1"> {/* Reduced space-y for denser list */}
+        <CardContent className="space-y-1">
           {filteredMarkerSets.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">
               {markerSets.length === 0 ? "No marker sets are currently defined." : "No sets match your search."}
             </p>
           ) : (
-            <ScrollArea className="h-[calc(100vh-280px)] md:h-[calc(100vh-300px)]"> {/* Adjust height as needed */}
+            <ScrollArea className="h-[calc(100vh-280px)] md:h-[calc(100vh-300px)]">
               <div className="pr-3 space-y-2">
                 {filteredMarkerSets.map(set => {
                   const isSetOwned = ownedSetIds.includes(set.id);
@@ -111,27 +112,24 @@ export function ManageSetsPage({ onViewSetActive }: ManageSetsPageProps) {
                         <Label
                           htmlFor={`set-${set.id}`}
                           id={`label-set-${set.id}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center"
                         >
                           {set.name}
-                        </Label>
-                        <p className="text-xs text-muted-foreground mt-0.5">
                           {!isSetOwned && uniqueMissingCount > 0 && (
-                            <span className="text-accent-foreground bg-accent/80 px-1.5 py-0.5 rounded-sm text-[10px] leading-none">
-                              (+{uniqueMissingCount} unique to your collection)
-                            </span>
+                            <Badge variant="secondary" className="ml-2 text-xs">
+                              ({uniqueMissingCount})
+                            </Badge>
                           )}
-                        </p>
+                        </Label>
                       </div>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-3 shrink-0"
                         onClick={() => onViewSetActive(set.id)}
-                        title={`View ${set.name} in palette`}
+                        title={`View all markers in ${set.name}`}
                       >
-                        <ExternalLink className="h-4 w-4" />
-                        <span className="sr-only">View {set.name} in palette</span>
+                        View All
                       </Button>
                     </div>
                   );
