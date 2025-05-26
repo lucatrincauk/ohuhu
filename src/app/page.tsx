@@ -13,14 +13,14 @@ import {
 } from '@/components/ui/sidebar';
 import { AppLogo } from '@/components/core/app-logo';
 import { MarkerGrid } from '@/components/markers/marker-grid';
-import { ColorExplorer } from '@/components/tools/color-explorer'; // New import
+import { ColorExplorer } from '@/components/tools/color-explorer';
 import { ManageSetsPage } from '@/components/profile/manage-sets';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import type { Marker } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, SearchCode, Layers, ListFilter, Menu, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc, Compass } from 'lucide-react'; // Added Compass
+import { Palette, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc, Compass, Menu } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -42,8 +42,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 
-type ActivePageContentType = 'palette' | 'explorer' | 'sets'; // Updated
-type ActiveSidebarContentType = null;
+type ActivePageContentType = 'palette' | 'explorer' | 'sets';
 type SortOrder = 'hue' | 'id' | 'name';
 type SetFilterValue = string | null | '__owned__';
 
@@ -165,16 +164,14 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
 
 
 export default function OhuhuHarmonyPage() {
-  const { markers: allMarkers, markerSets, addMarker, isInitialized, ownedSetIds, updateMarker } = useMarkerData();
+  const { markers: allMarkers, markerSets, isInitialized, ownedSetIds } = useMarkerData();
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<SetFilterValue>(null);
   const [selectedColorCategory, setSelectedColorCategory] = useState<{ name: string; hex: string } | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('hue');
 
   const [activePageContent, setActivePageContent] = useState<ActivePageContentType>('palette');
-  const [activeSidebarContent, setActiveSidebarContent] = useState<ActiveSidebarContentType>(null);
-
-  const [selectedMarkerForExplorer, setSelectedMarkerForExplorer] = useState<Marker | null>(null); // Renamed
+  const [selectedMarkerForExplorer, setSelectedMarkerForExplorer] = useState<Marker | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const { toast } = useToast();
 
@@ -227,9 +224,11 @@ export default function OhuhuHarmonyPage() {
             const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
             const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
             
+            // If both colors are chromatic (not greyscale) and have same hue, sort by lightness
             if (hslA.s >= 0.1 && hslB.s >= 0.1) { 
               return hslA.l - hslB.l; 
             }
+            // For greys or one grey/one color, the hue sort (which includes lightness for greys) is primary
             return 0;
           }
           return 0;
@@ -259,13 +258,13 @@ export default function OhuhuHarmonyPage() {
     }
   };
 
-  const handleSelectMarkerForExplorer = (marker: Marker) => { // Renamed
+  const handleSelectMarkerForExplorer = (marker: Marker) => {
     setSelectedMarkerForExplorer(marker);
     setActivePageContent('explorer');
-    setActiveSidebarContent(null);
+    setSearchTerm('');
   };
 
-  const clearSelectedMarkerForExplorer = () => { // Renamed
+  const clearSelectedMarkerForExplorer = () => {
     setSelectedMarkerForExplorer(null);
   }
 
@@ -294,7 +293,7 @@ export default function OhuhuHarmonyPage() {
         return <MarkerGrid
                   markers={displayedMarkers}
                   markerSets={markerSets}
-                  onSelectMarkerForShades={handleSelectMarkerForExplorer} // Updated prop name
+                  onSelectMarkerForShades={handleSelectMarkerForExplorer}
                   ownedSetIds={ownedSetIds}
                 />;
       case 'explorer':
@@ -311,14 +310,10 @@ export default function OhuhuHarmonyPage() {
         return <MarkerGrid
                   markers={displayedMarkers}
                   markerSets={markerSets}
-                  onSelectMarkerForShades={handleSelectMarkerForExplorer} // Updated prop name
+                  onSelectMarkerForShades={handleSelectMarkerForExplorer}
                   ownedSetIds={ownedSetIds}
                 />;
     }
-  };
-
-  const renderSidebarWidget = () => {
-    return <p className="p-4 text-center text-sm text-muted-foreground">Select a tool or navigate using the main panel.</p>;
   };
 
   interface SidebarButtonConfig {
@@ -330,15 +325,15 @@ export default function OhuhuHarmonyPage() {
   }
 
   const sidebarButtons: SidebarButtonConfig[] = [
-    { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: () => { setActivePageContent('palette'); setActiveSidebarContent(null); setSelectedMarkerForExplorer(null); setSearchTerm(''); }},
-    { id: 'explorer', name: "Color Explorer", Icon: Compass, type: 'main', action: () => { setActivePageContent('explorer'); setActiveSidebarContent(null); setSearchTerm(''); }}, // Updated
-    { id: 'sets', name: "My Sets", Icon: Library, type: 'main', action: () => { setActivePageContent('sets'); setActiveSidebarContent(null); setSelectedMarkerForExplorer(null); setSearchTerm(''); }},
+    { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: () => { setActivePageContent('palette'); setSelectedMarkerForExplorer(null); setSearchTerm(''); }},
+    { id: 'explorer', name: "Color Explorer", Icon: Compass, type: 'main', action: () => { setActivePageContent('explorer'); setSearchTerm(''); }},
+    { id: 'sets', name: "My Sets", Icon: Library, type: 'main', action: () => { setActivePageContent('sets'); setSelectedMarkerForExplorer(null); setSearchTerm(''); }},
   ];
 
   const getHeaderTitle = () => {
     if (activePageContent === 'palette') return "My Marker Palette";
     if (activePageContent === 'sets') return "My Sets";
-    if (activePageContent === 'explorer') return "Color Explorer"; // New
+    if (activePageContent === 'explorer') return "Color Explorer";
     const activeButton = sidebarButtons.find(btn => btn.id === activePageContent);
     return activeButton ? activeButton.name : "Ohuhu Harmony";
   };
@@ -391,9 +386,7 @@ export default function OhuhuHarmonyPage() {
                 ))}
               </div>
               <Separator className="my-4 group-data-[collapsible=icon]:hidden" />
-              <div className="p-4 group-data-[collapsible=icon]:hidden">
-                {activeSidebarContent ? renderSidebarWidget() : <p className="p-4 text-center text-sm text-muted-foreground">Tools open in the main view.</p>}
-              </div>
+              {/* Removed the div that contained the "Tools open in main view" message */}
             </ScrollArea>
           </SidebarContent>
           <SidebarFooter className="p-4 border-t group-data-[collapsible=icon]:hidden">
@@ -543,3 +536,4 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
+
