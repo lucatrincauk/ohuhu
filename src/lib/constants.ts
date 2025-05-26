@@ -15,6 +15,7 @@ export let INITIAL_MARKER_SETS: MarkerSet[] = [
   { id: 'ohuhu-honolulu-320', name: 'Honolulu 320'},
   { id: 'ohuhu-pastels-96', name: 'Pastels 96' },
   { id: 'ohuhu-honolulu-72', name: 'Honolulu 72' },
+  { id: 'ohuhu-honolulu-48', name: 'Honolulu 48' },
 ];
 
 const honolulu120MarkerIDs: string[] = [
@@ -79,7 +80,7 @@ const greyTones36MarkerIDs: string[] = [
 ];
 
 const skin36MarkerIDs: string[] = [
-  'Y4', 'Y9', 'Y12', 'Y13', 'Y121', 'Y145', 'YR1', 'YR5', 'YR6', 'YR7', 'YR8', 'YR9',
+  'Y4', 'Y9', 'Y12', 'Y121', 'Y145', 'YR1', 'YR5', 'YR6', 'YR7', 'YR8', 'YR9',
   'YR10', 'YR20', 'YR34', 'YR91', 'YR92', 'YR95', 'YR107', 'YR148', 'YR205', 'YR209',
   'YR212', 'R18', 'R19', 'R20', 'R21', 'R26', 'R27', 'R28', 'R29', 'R30', 'WG0.5',
   'BR2', 'BR3', 'BR208', '0'
@@ -109,14 +110,22 @@ const honolulu72MarkerIDs: string[] = [
   '0'
 ];
 
+const honolulu48MarkerIDs: string[] = [
+  'R1', 'R2', 'R4', 'R5', 'R7', 'R8', 'R9', 'R10', 'R11', 'RP1', 'BR1', 'BR2', 'BR3',
+  'P1', 'P2', 'P3', 'P4', 'P5', 'Y2', 'Y3', 'YR1', 'YR2', 'YR3', 'YR4', 'YR5',
+  'GY1', 'GY2', 'GY3', 'GY4', 'GY5', 'GY6', 'BG1', 'G1', 'G2', 'G5', 'G8',
+  'PB1', 'PB2', 'PB6', 'PB7', 'PB8', 'PB9', 'PB10', 'WG01', 'CGII00', 'CGII04',
+  'CGII07', '120', '0'
+];
+
 
 const existingMarkerData: Record<string, { name: string; hex: string }> = {
-  // Base set (Honolulu 120 and others, updated as new sets are added)
+  // Honolulu 120 Set (and other base colors)
   'Y1': { name: 'Pastel Yellow', hex: '#FFF9C0' },
   'Y2': { name: 'Sunflower', hex: '#FFDD00' },
-  'Y3': { name: 'Barium Yellow', hex: '#FFF1A8' }, // Name from H72 image
+  'Y3': { name: 'Barium Yellow', hex: '#FFF1A8' },
   'Y4': { name: 'Quince', hex: '#FADCA5' },
-  'Y5': { name: 'Rouge Orange', hex: '#FCC98A' }, // Name from H72 image
+  'Y5': { name: 'Rouge Orange', hex: '#FCC98A' },
   'Y6': { name: 'Yellow', hex: '#FFEB00' },
   'Y7': { name: 'Acid Yellow', hex: '#FFE080' },
   'Y8': { name: 'Deep Yellow', hex: '#FFCC33' },
@@ -128,7 +137,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'YR1': { name: 'Dark Yellow', hex: '#EFCB78' },
   'YR2': { name: 'Marigold', hex: '#FCAE3A' },
   'YR3': { name: 'Orange', hex: '#FFA500' },
-  'YR4': { name: 'Salmon Pink', hex: '#FCDCD4' }, // Name from H72 image
+  'YR4': { name: 'Salmon Pink', hex: '#FCDCD4' },
   'YR5': { name: 'Terra Cotta', hex: '#E2725B' },
   'YR33': { name: 'Melon Yellow', hex: '#FBC36F' },
   'BR1': { name: 'Raw Umber', hex: '#826644' },
@@ -138,12 +147,12 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'R2': { name: 'Vermilion', hex: '#F26522' },
   'R3': { name: 'Cosmos', hex: '#FF7F50' },
   'R4': { name: 'Deep Red', hex: '#94181D' },
-  'R5': { name: 'Cherry Pink', hex: '#F26C7D' }, // Name from H72
+  'R5': { name: 'Cherry Pink', hex: '#F26C7D' },
   'R6': { name: 'Vivid Red', hex: '#F15A24' },
   'R7': { name: 'Old Red', hex: '#A02D2B' },
-  'R8': { name: 'Geranium', hex: '#EC165D' }, // Name from H72
-  'R9': { name: 'Pastel Rose', hex: '#FFD1DC' }, // Name from H72
-  'R10': { name: 'Pastel Pink', hex: '#FEEFED' }, // Name from H72 (Pastel Pink)
+  'R8': { name: 'Geranium', hex: '#EC165D' },
+  'R9': { name: 'Pastel Rose', hex: '#FFD1DC' },
+  'R10': { name: 'Pastel Pink', hex: '#FEEFED' },
   'R11': { name: 'Mauve Shadow', hex: '#D6B4C5' },
   'R12': { name: 'Rose Buvard', hex: '#E5A0B6' },
   'R13': { name: 'Clematis', hex: '#C27BA0' },
@@ -180,7 +189,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'B64': { name: 'Indian Blue', hex: '#41719B' },
   'BG1': { name: 'Turquoise Green', hex: '#00A99D' },
   'BG2': { name: 'Deep Green', hex: '#00827A' },
-  'BG3': { name: 'Blue Grey 3', hex: '#D6E0EA' }, // Name from H72
+  'BG3': { name: 'Blue Grey 3', hex: '#D6E0EA' },
   'BG4': { name: 'Mint Blue', hex: '#D9E8EC' },
   'BG5': { name: 'Dolphin Blue', hex: '#8FD4CF' },
   'BG6': { name: 'Peacock Green', hex: '#00806E' },
@@ -192,19 +201,19 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'G2': { name: 'Vivid Green', hex: '#8DC63F' },
   'G3': { name: 'Ocean Green', hex: '#48BF91' },
   'G4': { name: 'Mint Green Light', hex: '#C0E6B0' },
-  'G5': { name: 'Turquoise Ink Blue', hex: '#70CAD1' }, // Name from H72
+  'G5': { name: 'Turquoise Ink Blue', hex: '#70CAD1' },
   'G6': { name: 'Dusty Jade Green', hex: '#85BFA1' },
   'G7': { name: 'Chromium Oxide Green', hex: '#6082B6' },
   'G8': { name: 'Glass Green', hex: '#C9E2CF' },
   'G9': { name: 'Meadow Green', hex: '#86B85C' },
   'GY1': { name: 'Pale Green', hex: '#E2EDD5' },
-  'GY2': { name: 'Grass Green', hex: '#C6D5A9' }, // Name from H72
+  'GY2': { name: 'Grass Green', hex: '#C6D5A9' },
   'GY3': { name: 'Bud Green', hex: '#BADD78' },
   'GY4': { name: 'Yellow Green', hex: '#D0E07A' },
   'GY5': { name: 'Absinthe', hex: '#C2D72F' },
   'GY6': { name: 'Anise', hex: '#F4F5D5' },
   'GY7': { name: 'Sugarcane', hex: '#F2F5DC' },
-  'GY8': { name: 'Petits Pois', hex: '#B4C882' }, // Name from H72
+  'GY8': { name: 'Petits Pois', hex: '#B4C882' },
   'GY42': { name: 'Bronze Green', hex: '#708238' },
   'GY43': { name: 'Deep Olive Green', hex: '#556B2F' },
   'GY172': { name: 'Spectrum Green', hex: '#BDE29A' },
@@ -310,7 +319,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'G470': { name: 'Pine Tree Green', hex: '#01796F' },
   'G490': { name: 'Viridian', hex: '#40826D' },
   'G500': { name: 'Peacock Blue', hex: '#00A0B0' },
-  'BR208': { name: 'Black Brown', hex: '#F0E0CF' }, // From New Pastels & Skin, name from NP
+  'BR208': { name: 'Black Brown', hex: '#F0E0CF' },
   'E010': { name: 'Pale Fruit Pink', hex: '#FBEAE4' },
   'E020': { name: 'Cotton Pearl', hex: '#F9E9E2' },
   'E030': { name: 'Pink Flamingo', hex: '#FADBD7' },
@@ -384,7 +393,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'E400': { name: 'Cocoa Brown', hex: '#9B5F29' },
   'E440': { name: 'Khaki', hex: '#C8B596' },
   'E490': { name: 'Deep Orange', hex: '#FF5A29' },
-  'CG070': { name: 'Neutral Grey 07', hex: '#8C8C8C' },
+  'CG070': { name: 'Neutral Grey 07', hex: '#8C8C8C' }, // Note: CG070 also in Ohuhu 104
   'BG070': { name: 'Cool Grey 07', hex: '#B0B9C4' },
   'YG080': { name: 'Yellow Grey 08', hex: '#C3C3BE' },
   'RG150': { name: 'Red Grey 150', hex: '#B5A5A5' },
@@ -400,7 +409,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'YR110': { name: 'Mellow Peach', hex: '#FFDEB9' },
   'YR240': { name: 'Cream', hex: '#FEFED5' },
   'R080': { name: 'Pale Cherry Pink', hex: '#FFC5CB' },
-  'R110': { name: 'Sardonyx', hex: '#FED6DC' }, // from Pastels
+  'R110': { name: 'Sardonyx', hex: '#FED6DC' },
   'R120': { name: 'Light Prawn', hex: '#FFBDC6' },
   'R250': { name: 'Antique Fuchsia', hex: '#EBEBFA' },
   'RV030': { name: 'Light Hot Pink', hex: '#FFB7DD' },
@@ -442,18 +451,18 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'GG020': { name: 'Green Grey 02', hex: '#E2EEE2' },
 
   // New Pastels 48 (Blossoming)
-  'R090': { name: 'Rose Mist', hex: '#F5A2A2' },
+  'R090': { name: 'Rose Mist', hex: '#F5A2A2' }, // YR090 also in Ohuhu 104, R090 is new.
 
   // Grey Tones 36
   'WG0.5': { name: 'Warm Grey 0.5', hex: '#F5F1ED' },
   'YG100': { name: 'Yellow Grey 100', hex: '#BFBFA8' },
 
   // Skin Tones 36
-  'Y145': { name: 'Buttercup Yellow', hex: '#FCEEB8' },
+  'Y145': { name: 'Buttercup Yellow', hex: '#FCEEB8' }, // (Corrected from OCR Bettercup)
   'YR6': { name: 'Primary Yellow', hex: '#FDEB6E' },
-  'YR7': { name: 'Cadmium Yellow', hex: '#F9E08C' },
+  'YR7': { name: 'Cadmium Yellow', hex: '#F9E08C' }, // (Corrected from OCR Cadium)
   'YR8': { name: 'Salmon', hex: '#F9AA8F' },
-  'YR9': { name: 'Yellow Ochre', hex: '#D29A68' },
+  // YR9 is 'Yellow Ochre' in Honolulu 120. Skin 36 image also shows YR9, with similar color. Name conflict resolved to Honolulu.
   'YR10': { name: 'Brun', hex: '#D37D5B' },
   'YR20': { name: 'Morin', hex: '#FBE1B8' },
   'YR34': { name: 'Yellow', hex: '#FBE59C' },
@@ -467,8 +476,10 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'YR212': { name: 'Milk White', hex: '#FFF8EE' },
   'R26': { name: 'Honey', hex: '#F8D3BB' },
   'R27': { name: 'Pale Mauve', hex: '#EBB9B1' },
-  'R28': { name: 'Colocasia Tonoimo', hex: '#D4AFAE' }, // Name from Skin 36
+  'R28': { name: 'Colocasia Tonoimo', hex: '#D4AFAE' },
+  // R29 is 'Pear Color' in Ohuhu 104. Skin 36 image also shows R29. Ohuhu 104 name retained.
   'R30': { name: 'Pale Cherry Pink', hex: '#FEE7EA' },
+  // BR208 is 'Black Brown' in Ohuhu 104/New Pastels. Skin 36 image also shows BR208. Ohuhu 104/New Pastels name retained.
 };
 
 
@@ -486,6 +497,7 @@ const setMarkerIdLists: { setId: string, ids: string[] }[] = [
   { setId: 'ohuhu-honolulu-320', ids: honolulu320MarkerIDs },
   { setId: 'ohuhu-pastels-96', ids: pastels96MarkerIDs },
   { setId: 'ohuhu-honolulu-72', ids: honolulu72MarkerIDs },
+  { setId: 'ohuhu-honolulu-48', ids: honolulu48MarkerIDs },
 ];
 
 // This map will hold the consolidated marker data.
@@ -503,6 +515,7 @@ for (const id in existingMarkerData) {
 
 // Step 2: Iterate through each defined set and its list of marker IDs
 // to populate the setIds array for each marker.
+// Also ensure any marker ID from a set list is present in mergedMarkersMap.
 setMarkerIdLists.forEach(setInfo => {
   setInfo.ids.forEach(id => {
     let markerEntry = mergedMarkersMap.get(id);
@@ -513,10 +526,11 @@ setMarkerIdLists.forEach(setInfo => {
       }
     } else {
       // This case implies an ID was in a set's list but not in existingMarkerData.
+      // This might happen if a new set references an ID for which we haven't manually defined a name/hex.
       // Add it here, using ID as name and a default hex.
       mergedMarkersMap.set(id, {
-        name: id,
-        hex: '#CCCCCC',
+        name: id, // Default name to ID
+        hex: '#CCCCCC', // Default hex
         setIds: [setInfo.setId],
       });
     }
@@ -533,28 +547,24 @@ mergedMarkersMap.forEach((value, key) => {
   });
 });
 
-// Ensure Colorless Blender ('0') is included if it was defined in existingMarkerData
-// and correctly associated with sets that list it.
-// The main loops should handle its inclusion and set associations if '0' is in the ID lists.
-if (existingMarkerData['0'] && !finalInitialMarkers.find(m => m.id === '0')) {
-    const blenderMarker = mergedMarkersMap.get('0');
-    if (blenderMarker) {
-         finalInitialMarkers.push({
-            id: '0',
-            name: blenderMarker.name,
-            hex: blenderMarker.hex,
-            setIds: blenderMarker.setIds,
-        });
-    }
-} else if (mergedMarkersMap.has('0')) { // Ensure blender has setIds if already added
-  const blender = finalInitialMarkers.find(m => m.id === '0');
-  if (blender && blender.setIds.length === 0) {
-    const blenderFromMap = mergedMarkersMap.get('0');
-    if (blenderFromMap) {
-      blender.setIds = blenderFromMap.setIds;
-    }
-  }
+
+// Ensure Colorless Blender ('0') is properly handled, especially if it was added via a set list
+// but wasn't in the initial `existingMarkerData` (though it usually is).
+if (!mergedMarkersMap.has('0') && existingMarkerData['0']) {
+    // This case should ideally not be hit if '0' is always in existingMarkerData
+     mergedMarkersMap.set('0', {
+        name: existingMarkerData['0'].name,
+        hex: existingMarkerData['0'].hex,
+        setIds: [], // Will be populated by set lists
+    });
 }
+// If '0' was in a set list, its setIds should have been populated.
+// If it wasn't in any set list but was in existingMarkerData, it might have no setIds.
+// We often associate '0' with the first large set or make it universally available.
+// The current loop structure should handle adding '0' if it's in any `setInfo.ids` list.
+// If '0' exists in mergedMarkersMap but has no setIds, we could assign it to a default set,
+// or ensure the set lists (like honolulu120MarkerIDs) explicitly include '0'.
+// Given '0' is often included in set lists, this should generally be covered.
 
 
 const tempFinalMarkers = finalInitialMarkers;
