@@ -48,7 +48,9 @@ export function ManageSetsPage({ onViewSetActive }: ManageSetsPageProps) {
     });
   }
 
-  const filteredMarkerSets = markerSets.filter(set =>
+  const sortedMarkerSets = [...markerSets].sort((a, b) => a.name.localeCompare(b.name));
+
+  const filteredMarkerSets = sortedMarkerSets.filter(set =>
     set.name.toLowerCase().includes(setSearchTerm.toLowerCase())
   );
 
