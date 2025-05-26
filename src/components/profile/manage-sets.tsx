@@ -117,7 +117,7 @@ export function ManageSetsPage({ onViewSetActive }: ManageSetsPageProps) {
                           {set.name}
                           {!isSetOwned && uniqueMissingCount > 0 && (
                             <Badge variant="secondary" className="ml-2 text-xs">
-                              ({uniqueMissingCount})
+                              (+{uniqueMissingCount})
                             </Badge>
                           )}
                         </Label>
