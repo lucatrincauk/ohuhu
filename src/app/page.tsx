@@ -20,7 +20,7 @@ import type { Marker } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc, Compass, Menu } from 'lucide-react';
+import { Palette, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc, Compass, Menu, ListFilter } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -386,7 +386,6 @@ export default function OhuhuHarmonyPage() {
                 ))}
               </div>
               <Separator className="my-4 group-data-[collapsible=icon]:hidden" />
-              {/* Removed the div that contained the "Tools open in main view" message */}
             </ScrollArea>
           </SidebarContent>
           <SidebarFooter className="p-4 border-t group-data-[collapsible=icon]:hidden">
