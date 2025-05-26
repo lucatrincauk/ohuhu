@@ -27,7 +27,7 @@ export function MarkerGrid({ markers, markerSets, onSelectMarkerForShades, owned
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 p-2 md:p-3">
       {markers.map((marker) => (
         <MarkerCard
-          key={marker.id}
+          key={`${marker.id}-${marker.setId}`}
           marker={marker}
           markerSets={markerSets}
           onSelectForShades={onSelectMarkerForShades}
