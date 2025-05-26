@@ -85,7 +85,6 @@ export function ManageSetsPage({ onViewSetActive }: ManageSetsPageProps) {
             <ScrollArea className="h-[calc(100vh-280px)] md:h-[calc(100vh-300px)]"> {/* Adjust height as needed */}
               <div className="pr-3 space-y-2">
                 {filteredMarkerSets.map(set => {
-                  const totalMarkersInSet = allMarkers.filter(m => m.setIds.includes(set.id)).length;
                   const isSetOwned = ownedSetIds.includes(set.id);
                   let uniqueMissingCount = 0;
 
@@ -117,9 +116,8 @@ export function ManageSetsPage({ onViewSetActive }: ManageSetsPageProps) {
                           {set.name}
                         </Label>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Total: {totalMarkersInSet} markers
                           {!isSetOwned && uniqueMissingCount > 0 && (
-                            <span className="ml-2 text-accent-foreground bg-accent/80 px-1.5 py-0.5 rounded-sm text-[10px] leading-none">
+                            <span className="text-accent-foreground bg-accent/80 px-1.5 py-0.5 rounded-sm text-[10px] leading-none">
                               (+{uniqueMissingCount} unique to your collection)
                             </span>
                           )}
