@@ -2,10 +2,11 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import type { Marker, MarkerSet, MarkerInventoryItem } from '@/lib/types';
+import type { Marker, MarkerSet } from '@/lib/types';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Slider } from '@/components/ui/slider';
@@ -19,13 +20,15 @@ import { findSimilarColors, type FindSimilarColorsInput, type FindSimilarColorsO
 import { generateShadeVariations, type GenerateShadeVariationsInput, type ShadeVariationResult } from '@/ai/flows/shade-variation-generator';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Compass, Palette, Sparkles, Layers, Check, ChevronsUpDown } from 'lucide-react';
+import { Compass, Palette, Sparkles, Layers, Check, ChevronsUpDown, SearchCode } from 'lucide-react';
 
 interface ColorExplorerProps {
   inventory: Marker[];
   initialSelectedMarker?: Marker | null;
   onClearSelectedMarker?: () => void;
 }
+
+const hexColorRegex = /^#([0-9A-Fa-f]{3}){1,2}$/;
 
 // Helper functions for color conversion and hue extraction
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -67,43 +70,57 @@ export function ColorExplorer({ inventory, initialSelectedMarker, onClearSelecte
   const { markerSets, ownedSetIds, getMarkerById } = useMarkerData();
   const { toast } = useToast();
 
-  const [selectedMarker, setSelectedMarker] = useState<Marker | null>(initialSelectedMarker || null);
+  const [activeColorHex, setActiveColorHex] = useState<string>(initialSelectedMarker?.hex || '');
+  const [analysisMode, setAnalysisMode] = useState<'similar' | 'shades'>('similar');
+  
   const [numShades, setNumShades] = useState<number>(5);
   const [searchScope, setSearchScope] = useState<'all' | 'owned'>('all');
   
   const [similarColorsResults, setSimilarColorsResults] = useState<FindSimilarColorsOutput>([]);
   const [shadeVariationsResults, setShadeVariationsResults] = useState<ShadeVariationResult[]>([]);
   
-  const [isLoadingSimilar, setIsLoadingSimilar] = useState<boolean>(false);
-  const [isLoadingShades, setIsLoadingShades] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
   const sortedInventory = useMemo(() => {
     return [...inventory].sort((a, b) => getHueFromHex(a.hex) - getHueFromHex(b.hex));
   }, [inventory]);
 
+  const currentSelectedMarkerFromHex = useMemo(() => {
+    if (!activeColorHex || !hexColorRegex.test(activeColorHex)) return null;
+    return inventory.find(m => m.hex.toLowerCase() === activeColorHex.toLowerCase()) || null;
+  }, [activeColorHex, inventory]);
+
   useEffect(() => {
     if (initialSelectedMarker) {
-      setSelectedMarker(initialSelectedMarker);
+      setActiveColorHex(initialSelectedMarker.hex);
     }
   }, [initialSelectedMarker]);
 
-  const handleMarkerSelect = (markerId: string) => {
+  const handleComboboxSelect = (markerId: string) => {
     const newlySelected = inventory.find(m => m.id === markerId);
     if (newlySelected) {
-      setSelectedMarker(newlySelected);
-      // Clear previous results when a new marker is selected
-      setSimilarColorsResults([]);
-      setShadeVariationsResults([]);
+      setActiveColorHex(newlySelected.hex);
       if (onClearSelectedMarker && initialSelectedMarker && initialSelectedMarker.id !== markerId) {
-        onClearSelectedMarker();
+        onClearSelectedMarker(); // Signal that the initial selection is no longer primary
       }
     }
     setComboboxOpen(false);
+    setSimilarColorsResults([]);
+    setShadeVariationsResults([]);
+  };
+
+  const handleHexInputChange = (hex: string) => {
+    setActiveColorHex(hex.toUpperCase());
+    if (onClearSelectedMarker && initialSelectedMarker && initialSelectedMarker.hex.toLowerCase() !== hex.toLowerCase()) {
+      onClearSelectedMarker();
+    }
+    setSimilarColorsResults([]);
+    setShadeVariationsResults([]);
   };
 
   const handleClearSelection = () => {
-    setSelectedMarker(null);
+    setActiveColorHex('');
     setSimilarColorsResults([]);
     setShadeVariationsResults([]);
     if (onClearSelectedMarker) {
@@ -112,8 +129,8 @@ export function ColorExplorer({ inventory, initialSelectedMarker, onClearSelecte
   };
 
   const handleAnalyzeMarker = async () => {
-    if (!selectedMarker) {
-      toast({ title: 'No Marker Selected', description: 'Please select a marker from your inventory to explore.', variant: 'destructive' });
+    if (!hexColorRegex.test(activeColorHex)) {
+      toast({ title: 'Invalid Hex Color', description: 'Please enter or select a valid hex color.', variant: 'destructive' });
       return;
     }
 
@@ -137,52 +154,47 @@ export function ColorExplorer({ inventory, initialSelectedMarker, onClearSelecte
         });
         return;
     }
-
-
     if (inventory.length === 0) {
       toast({ title: 'Empty Inventory', description: 'Your marker inventory is empty.', variant: 'destructive' });
       return;
     }
 
-
-    // Find Similar Colors
-    setIsLoadingSimilar(true);
+    setIsLoading(true);
     setSimilarColorsResults([]);
-    const similarColorsInput: FindSimilarColorsInput = {
-      targetColorHex: selectedMarker.hex,
-      markerInventory: inventoryToSearch.map(m => ({ id: m.id, name: m.name, hex: m.hex })),
-    };
-    try {
-      const similarResult = await findSimilarColors(similarColorsInput);
-      setSimilarColorsResults(similarResult);
-    } catch (error) {
-      console.error('Error finding similar colors:', error);
-      toast({ title: 'Error Finding Similar Colors', description: 'Failed to find similar colors. Please try again.', variant: 'destructive' });
-    } finally {
-      setIsLoadingSimilar(false);
-    }
-
-    // Generate Shade Variations
-    setIsLoadingShades(true);
     setShadeVariationsResults([]);
-    const shadeVariationsInput: GenerateShadeVariationsInput = {
-      hexColor: selectedMarker.hex,
-      numShades: numShades,
-      markerInventory: inventoryToSearch.map(m => ({ id: m.id, name: m.name, hex: m.hex, setId: m.setIds[0] || '' })),
-    };
-    try {
-      const shadesResult = await generateShadeVariations(shadeVariationsInput);
-      const sortedShades = shadesResult.shades.sort((a,b) => getHueFromHex(a.hex) - getHueFromHex(b.hex));
-      setShadeVariationsResults(sortedShades);
-    } catch (error) {
-      console.error('Error generating shades:', error);
-      toast({ title: 'Error Generating Shades', description: 'Failed to generate shades. Please try again.', variant: 'destructive' });
-    } finally {
-      setIsLoadingShades(false);
+
+    if (analysisMode === 'similar') {
+      const similarColorsInput: FindSimilarColorsInput = {
+        targetColorHex: activeColorHex,
+        markerInventory: inventoryToSearch.map(m => ({ id: m.id, name: m.name, hex: m.hex })),
+      };
+      try {
+        const similarResult = await findSimilarColors(similarColorsInput);
+        setSimilarColorsResults(similarResult);
+         if(similarResult.length === 0) toast({ title: 'No Similar Colors', description: 'No similar colors found in the selected scope.' });
+      } catch (error) {
+        console.error('Error finding similar colors:', error);
+        toast({ title: 'Error Finding Similar Colors', description: 'Failed to find similar colors. Please try again.', variant: 'destructive' });
+      }
+    } else if (analysisMode === 'shades') {
+      const shadeVariationsInput: GenerateShadeVariationsInput = {
+        hexColor: activeColorHex,
+        numShades: numShades,
+        markerInventory: inventoryToSearch.map(m => ({ id: m.id, name: m.name, hex: m.hex, setId: m.setIds[0] || '' })),
+      };
+      try {
+        const shadesResult = await generateShadeVariations(shadeVariationsInput);
+        const sortedShades = shadesResult.shades.sort((a,b) => getHueFromHex(a.hex) - getHueFromHex(b.hex));
+        setShadeVariationsResults(sortedShades);
+        if(sortedShades.length === 0) toast({ title: 'No Shade Variations', description: 'No shade variations found in the selected scope.' });
+      } catch (error) {
+        console.error('Error generating shades:', error);
+        toast({ title: 'Error Generating Shades', description: 'Failed to generate shades. Please try again.', variant: 'destructive' });
+      }
     }
+    setIsLoading(false);
   };
 
-  const isLoading = isLoadingSimilar || isLoadingShades;
 
   return (
     <Card className="shadow-sm bg-card">
@@ -191,27 +203,27 @@ export function ColorExplorer({ inventory, initialSelectedMarker, onClearSelecte
           <Compass className="h-6 w-6 text-primary" />
           <CardTitle>Color Explorer</CardTitle>
         </div>
-        <CardDescription>Select a marker to find similar colors and generate shade variations from your inventory.</CardDescription>
+        <CardDescription>Select or enter a color to find similar colors or generate shade variations from your inventory.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Base Marker</Label>
-          <div className="flex items-center gap-2">
+          <Label className="text-sm font-medium">Base Color</Label>
+          <div className="flex items-center gap-2 flex-wrap">
             <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={comboboxOpen}
-                  className="w-full justify-between flex-grow"
+                  className="w-full md:w-auto justify-between flex-grow min-w-[200px]"
                   disabled={isLoading || inventory.length === 0}
-                  title={inventory.length === 0 ? "Add markers to inventory first" : "Select base marker"}
+                  title={inventory.length === 0 ? "Add markers to inventory first" : "Select base marker from inventory"}
                 >
-                  {selectedMarker
+                  {currentSelectedMarkerFromHex
                     ? (
                       <div className="flex items-center gap-2 truncate">
-                        <ColorSwatch hexColor={selectedMarker.hex} size="sm" />
-                        <span className="truncate">{selectedMarker.name} ({selectedMarker.id})</span>
+                        <ColorSwatch hexColor={currentSelectedMarkerFromHex.hex} size="sm" />
+                        <span className="truncate">{currentSelectedMarkerFromHex.name} ({currentSelectedMarkerFromHex.id})</span>
                       </div>
                     )
                     : "Select from inventory..."}
@@ -228,9 +240,9 @@ export function ColorExplorer({ inventory, initialSelectedMarker, onClearSelecte
                         <CommandItem
                           key={marker.id}
                           value={`${marker.name} ${marker.id} ${marker.hex}`}
-                          onSelect={() => handleMarkerSelect(marker.id)}
+                          onSelect={() => handleComboboxSelect(marker.id)}
                         >
-                          <Check className={cn("mr-2 h-4 w-4", selectedMarker?.id === marker.id ? "opacity-100" : "opacity-0")} />
+                          <Check className={cn("mr-2 h-4 w-4", currentSelectedMarkerFromHex?.id === marker.id ? "opacity-100" : "opacity-0")} />
                           <div className="flex items-center gap-2">
                             <ColorSwatch hexColor={marker.hex} size="sm" />
                             {marker.name} ({marker.id})
@@ -242,23 +254,53 @@ export function ColorExplorer({ inventory, initialSelectedMarker, onClearSelecte
                 </Command>
               </PopoverContent>
             </Popover>
-            {selectedMarker && (
-              <Button variant="ghost" size="sm" onClick={handleClearSelection} disabled={isLoading}>Clear</Button>
+            <span className="text-sm text-muted-foreground hidden md:inline">OR</span>
+             <div className="flex items-center gap-2 flex-grow w-full md:w-auto">
+                <Input
+                    type="text"
+                    placeholder="#RRGGBB"
+                    value={activeColorHex}
+                    onChange={(e) => handleHexInputChange(e.target.value)}
+                    className="flex-grow min-w-[100px]"
+                    disabled={isLoading}
+                    aria-label="Hex color input"
+                />
+                <input
+                    type="color"
+                    value={hexColorRegex.test(activeColorHex) ? activeColorHex : '#FFFFFF'}
+                    onChange={(e) => handleHexInputChange(e.target.value)}
+                    className="h-10 w-10 p-1 border rounded-md cursor-pointer shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isLoading}
+                    title="Pick a color"
+                    aria-label="HTML color picker"
+                />
+            </div>
+            {activeColorHex && (
+              <Button variant="ghost" size="sm" onClick={handleClearSelection} disabled={isLoading} className="shrink-0">Clear</Button>
             )}
           </div>
         </div>
-
-        {selectedMarker && (
-          <Card className="bg-muted/30 p-4">
-            <CardTitle className="text-lg mb-2">Selected: {selectedMarker.name} ({selectedMarker.id})</CardTitle>
-            <ColorSwatch hexColor={selectedMarker.hex} size="lg" />
-          </Card>
-        )}
-
-        <div className="space-y-2">
-          <Label htmlFor="numShadesSlider" className="text-sm font-medium">Number of Shades for Variation: {numShades}</Label>
-          <Slider id="numShadesSlider" min={3} max={9} step={1} value={[numShades]} onValueChange={(v) => setNumShades(v[0])} disabled={isLoading} />
+        
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Analysis Type</Label>
+          <RadioGroup value={analysisMode} onValueChange={(v: 'similar' | 'shades') => { setAnalysisMode(v); setSimilarColorsResults([]); setShadeVariationsResults([]);}} className="flex space-x-4" disabled={isLoading}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="similar" id="mode-similar" />
+              <Label htmlFor="mode-similar" className="font-normal">Find Similar Colors</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="shades" id="mode-shades" />
+              <Label htmlFor="mode-shades" className="font-normal">Generate Shade Variations</Label>
+            </div>
+          </RadioGroup>
         </div>
+
+        {analysisMode === 'shades' && (
+          <div className="space-y-2">
+            <Label htmlFor="numShadesSlider" className="text-sm font-medium">Number of Shades for Variation: {numShades}</Label>
+            <Slider id="numShadesSlider" min={3} max={9} step={1} value={[numShades]} onValueChange={(v) => setNumShades(v[0])} disabled={isLoading} />
+          </div>
+        )}
 
         <div className="space-y-3">
           <Label className="text-sm font-medium">Search Scope for AI</Label>
@@ -279,95 +321,90 @@ export function ColorExplorer({ inventory, initialSelectedMarker, onClearSelecte
           )}
         </div>
 
-        <Button onClick={handleAnalyzeMarker} disabled={isLoading || !selectedMarker || inventory.length === 0} className="w-full">
+        <Button onClick={handleAnalyzeMarker} disabled={isLoading || !hexColorRegex.test(activeColorHex) || inventory.length === 0} className="w-full">
           {isLoading ? (
             <><Compass className="mr-2 h-4 w-4 animate-pulse" />Analyzing...</>
           ) : (
-            <><Compass className="mr-2 h-4 w-4" />Analyze Selected Marker</>
+            <><Compass className="mr-2 h-4 w-4" />Analyze Color</>
           )}
         </Button>
 
         <Separator />
 
         {/* Similar Colors Section */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h4 className="font-semibold text-lg">Similar Colors from Inventory</h4>
-          </div>
-          {isLoadingSimilar && (
-            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-2 p-2 border rounded-md bg-muted/30">
-                  <Skeleton className="h-8 w-8 rounded-md" />
-                  <div className="space-y-1"><Skeleton className="h-4 w-24" /><Skeleton className="h-3 w-16" /></div>
-                </div>
-              ))}
+        {analysisMode === 'similar' && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <SearchCode className="h-5 w-5 text-primary" />
+              <h4 className="font-semibold text-lg">Similar Colors from Inventory</h4>
             </div>
-          )}
-          {!isLoadingSimilar && similarColorsResults.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-0">
-              {similarColorsResults.slice(0, 8).map((result) => { // Display up to 8 similar colors
-                 const fullMarker = getMarkerById(result.id);
-                 if (!fullMarker) return null;
-                 return (
+            {isLoading && <Skeleton className="h-24 w-full" />}
+            {!isLoading && similarColorsResults.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-0">
+                {similarColorsResults.slice(0, 8).map((result) => { 
+                   const fullMarker = getMarkerById(result.id);
+                   if (!fullMarker) return null;
+                   return (
+                      <MarkerCard
+                        key={`similar-${fullMarker.id}`}
+                        marker={fullMarker}
+                        markerSets={markerSets}
+                        isOwned={fullMarker.setIds.some(sid => ownedSetIds.includes(sid))}
+                      />
+                   );
+                })}
+              </div>
+            )}
+            {!isLoading && similarColorsResults.length === 0 && hexColorRegex.test(activeColorHex) && (
+              <p className="text-sm text-muted-foreground">No significantly similar colors found in the selected scope.</p>
+            )}
+          </div>
+        )}
+
+        {/* Shade Variations Section */}
+        {analysisMode === 'shades' && (
+          <div className="space-y-3">
+             <div className="flex items-center gap-2">
+              <Layers className="h-5 w-5 text-primary" />
+              <h4 className="font-semibold text-lg">Shade Variations from Inventory</h4>
+            </div>
+            {isLoading && (
+               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 p-0">
+                {[...Array(numShades)].map((_, i) => (
+                  <div key={`skel-shade-${i}`} className="flex flex-col items-center">
+                    <div className="p-2 border rounded-md space-y-1 bg-muted/30 w-full">
+                      <Skeleton className="h-20 w-full rounded-t-md" />
+                      <div className="p-2 space-y-0.5"><Skeleton className="h-3 w-3/4" /><Skeleton className="h-3 w-1/2" /></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!isLoading && shadeVariationsResults.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 p-0">
+                {shadeVariationsResults.map((shade) => {
+                  const fullMarker = getMarkerById(shade.id);
+                  if (!fullMarker) return null;
+                  return (
                     <MarkerCard
-                      key={`similar-${fullMarker.id}`}
+                      key={`shade-${fullMarker.id}`}
                       marker={fullMarker}
                       markerSets={markerSets}
                       isOwned={fullMarker.setIds.some(sid => ownedSetIds.includes(sid))}
                     />
-                 );
-              })}
-            </div>
-          )}
-          {!isLoadingSimilar && similarColorsResults.length === 0 && selectedMarker && !isLoading && (
-            <p className="text-sm text-muted-foreground">No significantly similar colors found in the selected scope.</p>
-          )}
-        </div>
-
-        <Separator />
-
-        {/* Shade Variations Section */}
-        <div className="space-y-3">
-           <div className="flex items-center gap-2">
-            <Layers className="h-5 w-5 text-primary" />
-            <h4 className="font-semibold text-lg">Shade Variations from Inventory</h4>
+                  );
+                })}
+              </div>
+            )}
+             {!isLoading && shadeVariationsResults.length === 0 && hexColorRegex.test(activeColorHex) && (
+              <p className="text-sm text-muted-foreground">No suitable shade variations found in the selected scope.</p>
+            )}
           </div>
-          {isLoadingShades && (
-             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 p-0">
-              {[...Array(numShades)].map((_, i) => (
-                <div key={`skel-shade-${i}`} className="flex flex-col items-center">
-                  <div className="p-2 border rounded-md space-y-1 bg-muted/30 w-full">
-                    <Skeleton className="h-20 w-full rounded-t-md" />
-                    <div className="p-2 space-y-0.5"><Skeleton className="h-3 w-3/4" /><Skeleton className="h-3 w-1/2" /></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {!isLoadingShades && shadeVariationsResults.length > 0 && (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 p-0">
-              {shadeVariationsResults.map((shade) => {
-                const fullMarker = getMarkerById(shade.id);
-                if (!fullMarker) return null;
-                return (
-                  <MarkerCard
-                    key={`shade-${fullMarker.id}`}
-                    marker={fullMarker}
-                    markerSets={markerSets}
-                    isOwned={fullMarker.setIds.some(sid => ownedSetIds.includes(sid))}
-                  />
-                );
-              })}
-            </div>
-          )}
-           {!isLoadingShades && shadeVariationsResults.length === 0 && selectedMarker && !isLoading && (
-            <p className="text-sm text-muted-foreground">No suitable shade variations found in the selected scope.</p>
-          )}
-        </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
+
+    
