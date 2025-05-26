@@ -116,7 +116,7 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
   const { r: mr, g: mg, b: mb } = markerRgb;
   const markerHsl = rgbToHsl(mr, mg, mb);
   
-  const sThresholdChromatic = 0.12; // Min saturation to be considered a "color" vs grey
+  const sThresholdChromatic = 0.10; // Min saturation to be considered a "color" vs grey (was 0.12)
   const sThresholdGrey = 0.20;    // Max saturation to be considered for "grey" categories
 
   // Greyscale checks first
@@ -131,40 +131,39 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
   }
 
   // Chromatic color checks
-  // Each chromatic category now checks its own saturation requirement.
   if (categoryHex === "#FF0000") { // Red
-    return (markerHsl.h >= 335 || markerHsl.h <= 20) && markerHsl.s >= sThresholdChromatic;
+    return (markerHsl.h >= 330 || markerHsl.h <= 25) && markerHsl.s >= sThresholdChromatic; // Wider range
   }
   if (categoryHex === "#FFA500") { // Orange
-    return (markerHsl.h > 20 && markerHsl.h <= 50) && markerHsl.s >= sThresholdChromatic;
+    return (markerHsl.h > 20 && markerHsl.h <= 50) && markerHsl.s >= sThresholdChromatic; // Range seems okay
   }
   if (categoryHex === "#FFFF00") { // Yellow
-    return (markerHsl.h > 50 && markerHsl.h <= 70) && markerHsl.s >= sThresholdChromatic; 
+    return (markerHsl.h > 48 && markerHsl.h <= 72) && markerHsl.s >= sThresholdChromatic;  // Wider range
   }
   if (categoryHex === "#008000") { // Green
-    return (markerHsl.h > 70 && markerHsl.h <= 160) && markerHsl.s >= sThresholdChromatic;
+    return (markerHsl.h > 70 && markerHsl.h <= 165) && markerHsl.s >= sThresholdChromatic; // Wider range
   }
-  if (categoryHex === "#0000FF") { // Blue (covers a wide range including cyan-blues to violet-blues)
-    return (markerHsl.h > 160 && markerHsl.h <= 260) && markerHsl.s >= sThresholdChromatic;
+  if (categoryHex === "#0000FF") { // Blue
+    return (markerHsl.h > 160 && markerHsl.h <= 265) && markerHsl.s >= sThresholdChromatic; // Wider range
   }
-  if (categoryHex === "#800080") { // Purple (violets and magentas)
-    return (markerHsl.h > 260 && markerHsl.h < 335) && markerHsl.s >= sThresholdChromatic;
+  if (categoryHex === "#800080") { // Purple
+    return (markerHsl.h > 260 && markerHsl.h < 340) && markerHsl.s >= sThresholdChromatic; // Wider range
   }
   if (categoryHex === "#FFC0CB") { // Pink
     return (
-        ( (markerHsl.h >= 320 || markerHsl.h <= 15) && markerHsl.l >= 0.60 ) || 
-        ( markerHsl.h >= 300 && markerHsl.h < 335 && markerHsl.l >= 0.55 ) 
+        ( (markerHsl.h >= 320 || markerHsl.h <= 20) && markerHsl.l >= 0.55 ) || // Adjusted lightness threshold
+        ( markerHsl.h >= 295 && markerHsl.h < 335 && markerHsl.l >= 0.50 )  // Broader hue, adjusted L
     ) && markerHsl.s >= sThresholdChromatic;
   }
   if (categoryHex === "#A52A2A") { // Brown
     return (
-      (markerHsl.h >= 10 && markerHsl.h <= 50) && 
-      markerHsl.s >= 0.05 && markerHsl.s <= 0.70 && 
-      markerHsl.l >= 0.10 && markerHsl.l <= 0.60   
+      (markerHsl.h >= 8 && markerHsl.h <= 55) && // Wider hue range
+      markerHsl.s >= 0.05 && markerHsl.s <= 0.75 && // Slightly wider saturation
+      markerHsl.l >= 0.08 && markerHsl.l <= 0.65   // Slightly wider lightness
     );
   }
 
-  return false; // Fallback if categoryHex doesn't match any known filter
+  return false;
 }
 
 
@@ -179,7 +178,6 @@ export default function OhuhuHarmonyPage() {
   const [activeSidebarContent, setActiveSidebarContent] = useState<ActiveSidebarContentType>(null);
 
   const [selectedMarkerForShades, setSelectedMarkerForShades] = useState<Marker | null>(null);
-  const [editingMarker, setEditingMarker] = useState<Marker | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const { toast } = useToast();
 
@@ -236,8 +234,6 @@ export default function OhuhuHarmonyPage() {
             if (hslA.s >= 0.1 && hslB.s >= 0.1) { 
               return hslA.l - hslB.l; // Ascending lightness (lighter first)
             }
-             // For greys (which getHueFromHex already sorts by lightness effectively)
-            // or if HSL conversion isn't perfect, keep original relative order if hues are identical.
             return 0;
           }
           return 0;
@@ -281,23 +277,6 @@ export default function OhuhuHarmonyPage() {
     addMarker(markerData);
     setActivePageContent('palette');
     setActiveSidebarContent(null);
-  };
-
-  const handleOpenEditDialog = (marker: Marker) => {
-    setEditingMarker(marker);
-  };
-
-  const handleCloseEditDialog = () => {
-    setEditingMarker(null);
-  };
-
-  const handleSaveChanges = (markerId: string, updates: { name: string; hex: string }) => {
-    updateMarker(markerId, updates);
-    toast({
-      title: 'Marker Updated',
-      description: `${updates.name} (${markerId}) has been updated.`,
-    });
-    handleCloseEditDialog();
   };
 
 
@@ -459,7 +438,7 @@ export default function OhuhuHarmonyPage() {
                         checked={selectedColorCategory?.name === color.name}
                         onSelect={(event) => {
                            event.preventDefault();
-                           handleColorCategorySelect(selectedColorCategory?.name === color.name ? null : color);
+                           handleColorCategorySelect(selectedColorCategory?.name === color.name ? null : { name: color.name, hex: color.hexBase });
                         }}
                       >
                         <ColorSwatch hexColor={color.hexBase} size="sm" className="mr-2 border-none shadow-none"/>
