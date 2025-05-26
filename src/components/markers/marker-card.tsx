@@ -19,9 +19,14 @@ export function MarkerCard({ marker, markerSets, onSelectMarkerForShades, isOwne
   if (marker.setIds && marker.setIds.length > 0) {
     if (marker.setIds.length === 1) {
       const set = markerSets.find(s => s.id === marker.setIds[0]);
-      setNameDisplay = set ? set.name : 'Unknown Set';
+      setNameDisplay = set ? set.name : marker.setIds[0]; // Fallback to ID if name not found
     } else {
-      setNameDisplay = 'Multiple Sets';
+      setNameDisplay = marker.setIds
+        .map(id => {
+          const set = markerSets.find(s => s.id === id);
+          return set ? set.name : id; // Fallback to ID
+        })
+        .join(', ');
     }
   }
 
@@ -49,7 +54,7 @@ export function MarkerCard({ marker, markerSets, onSelectMarkerForShades, isOwne
       <CardContent className="flex-grow p-2 space-y-0.5"> 
         <CardTitle className="mb-0.5 text-sm leading-tight">{marker.name}</CardTitle> 
         <p className="text-xs text-muted-foreground">ID: {marker.id}</p>
-        <p className="text-xs text-muted-foreground" title={setNameDisplay}>Set: <span className="truncate">{setNameDisplay}</span></p> 
+        <p className="text-xs text-muted-foreground" title={setNameDisplay}>Set: <span className="truncate block">{setNameDisplay}</span></p> 
       </CardContent>
       <CardFooter className="p-2 pt-0 flex flex-col space-y-1"> 
         {onSelectMarkerForShades && (
