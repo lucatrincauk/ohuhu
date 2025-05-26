@@ -12,8 +12,8 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { AppLogo } from '@/components/core/app-logo';
-import { AddMarkerForm } from '@/components/markers/add-marker-form';
-import type { AddMarkerFormValues } from '@/components/markers/add-marker-form';
+// import { AddMarkerForm } from '@/components/markers/add-marker-form'; // Removed
+// import type { AddMarkerFormValues } from '@/components/markers/add-marker-form'; // Removed
 import { MarkerGrid } from '@/components/markers/marker-grid';
 import { SimilarColorFinder } from '@/components/tools/similar-color-finder';
 import { ShadeVariationGenerator } from '@/components/tools/shade-variation-generator';
@@ -45,7 +45,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 
-type ActivePageContentType = 'palette' | 'add' | 'similar' | 'shades' | 'sets';
+type ActivePageContentType = 'palette' | 'similar' | 'shades' | 'sets'; // Removed 'add'
 type ActiveSidebarContentType = null;
 type SortOrder = 'hue' | 'id' | 'name';
 type SetFilterValue = string | null | '__owned__';
@@ -272,11 +272,7 @@ export default function OhuhuHarmonyPage() {
     setSelectedMarkerForShades(null);
   }
 
-  const handleAddMarkerAndReturnToPalette = (markerData: AddMarkerFormValues) => {
-    addMarker({ ...markerData, setId: markerData.setId }); // Ensure addMarker in context handles conversion to setIds
-    setActivePageContent('palette');
-    setActiveSidebarContent(null);
-  };
+  // Removed handleAddMarkerAndReturnToPalette
 
   const handleNavigateToPaletteWithSetFilter = (setId: string) => {
     setActivePageContent('palette');
@@ -305,8 +301,8 @@ export default function OhuhuHarmonyPage() {
                   onSelectMarkerForShades={handleSelectMarkerForShades}
                   ownedSetIds={ownedSetIds}
                 />;
-      case 'add':
-        return <div className="p-4 md:p-6 max-w-2xl mx-auto"><AddMarkerForm markerSets={markerSets} onAddMarker={handleAddMarkerAndReturnToPalette} /></div>;
+      // case 'add': // Removed
+      //   return <div className="p-4 md:p-6 max-w-2xl mx-auto"><AddMarkerForm markerSets={markerSets} onAddMarker={handleAddMarkerAndReturnToPalette} /></div>;
       case 'similar':
         return <div className="p-4 md:p-6 max-w-2xl mx-auto"><SimilarColorFinder inventory={allMarkers} /></div>;
       case 'shades':
@@ -337,7 +333,7 @@ export default function OhuhuHarmonyPage() {
 
   const sidebarButtons: SidebarButtonConfig[] = [
     { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: () => { setActivePageContent('palette'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
-    { id: 'add', name: "Add Marker", Icon: PlusSquare, type: 'main', action: () => { setActivePageContent('add'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
+    // { id: 'add', name: "Add Marker", Icon: PlusSquare, type: 'main', action: () => { setActivePageContent('add'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }}, // Removed
     { id: 'similar', name: "Similar Colors", Icon: SearchCode, type: 'main', action: () => { setActivePageContent('similar'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
     { id: 'shades', name: "Shade Variations", Icon: Layers, type: 'main', action: () => { setActivePageContent('shades'); setActiveSidebarContent(null); setSearchTerm(''); }},
     { id: 'sets', name: "My Sets", Icon: Library, type: 'main', action: () => { setActivePageContent('sets'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
@@ -550,4 +546,3 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
-
