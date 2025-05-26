@@ -12,6 +12,7 @@ export let INITIAL_MARKER_SETS: MarkerSet[] = [
   { id: 'ohuhu-skin-24', name: 'Skin 24' },
   { id: 'ohuhu-honolulu-168', name: 'Honolulu 168'},
   { id: 'ohuhu-honolulu-216', name: 'Honolulu 216'},
+  { id: 'ohuhu-honolulu-320', name: 'Honolulu 320'},
 ];
 
 const honolulu120MarkerIDs: string[] = [
@@ -26,7 +27,7 @@ const honolulu120MarkerIDs: string[] = [
   'R16', 'R17', 'R18', 'R19', 'R20', 'R21', 'R22', 'R23', 'R24', 'R25', 'RP1',
   'RP6', 'WG01', 'WG09', 'WG3', 'WG4', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6',
   'Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13', 'YR1', 'YR2', 'YR3', 'YR4',
-  'YR5', 'YR33', '120'
+  'YR5', 'YR33', '120', '0' // Added 0 (Colorless Blender) here as it's part of the set
 ];
 
 const ohuhu104MarkerIDs: string[] = [
@@ -48,7 +49,7 @@ const honoluluMidtones48MarkerIDs: string[] = [
   'RV070', 'RV080', 'RV200', 'RV270', 'RV320', 'V060', 'V160', 'V250', 'V270', 'V370',
   'B070', 'B140', 'B260', 'B290', 'B350', 'B380', 'G060', 'G070', 'G170', 'G190',
   'G240', 'G360', 'G440', 'E060', 'E110', 'E170', 'E240', 'E300', 'E310', 'E400',
-  'E440', 'E490', 'CG070', 'BG070', 'YG080', 'RG150', 'MG060', 'GG060'
+  'E440', 'E490', 'CG070', 'BG070', 'YG080', 'RG150', 'MG060', 'GG060', '0'
 ];
 
 const pastels48MarkerIDs: string[] = [
@@ -65,7 +66,7 @@ const newPastels48MarkerIDs: string[] = [
   'RV130', 'R25', 'G050', 'G410', 'GY173', 'CG2', 'Y040', 'R29', 'RV300', 'PB1',
   'G110', 'G8', 'E010', 'GG1', 'Y3', 'R050', 'V150', 'BG3', 'G130', 'GY1',
   'E020', 'WG01', 'YR220', 'R090', 'V322', 'BG4', 'G320', 'GY6', 'E030', 'BGII03',
-  'YR4', 'R242', 'V330', 'B110', 'G322', 'GY7', 'CGII00', 'BG9'
+  'YR4', 'R242', 'V330', 'B110', 'G322', 'GY7', 'CGII00', 'BG9', '0'
 ];
 
 const greyTones36MarkerIDs: string[] = [
@@ -90,6 +91,7 @@ const skin24MarkerIDs: string[] = [
 
 const honolulu168MarkerIDs: string[] = Array.from(new Set([...honolulu120MarkerIDs, ...pastels48MarkerIDs]));
 const honolulu216MarkerIDs: string[] = Array.from(new Set([...honolulu168MarkerIDs, ...honoluluMidtones48MarkerIDs]));
+const honolulu320MarkerIDs: string[] = Array.from(new Set([...honolulu216MarkerIDs, ...ohuhu104MarkerIDs]));
 
 
 const existingMarkerData: Record<string, { name: string; hex: string }> = {
@@ -310,7 +312,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'CG030': { name: 'Neutral Grey 03', hex: '#EAEAEA' },
   'BG060': { name: 'Deep Cool Grey', hex: '#8C92AC' },
   'WG070': { name: 'Warm Grey 07', hex: '#8C8C8C' },
-  // 'WG090': { name: 'Warm Grey 09', hex: '#696969' }, // Name collision with WG09, using Honolulu 120 version
+  'WG090': { name: 'Warm Grey 09', hex: '#696969' },
   'WG130': { name: 'Warm Grey 13', hex: '#545454' },
   'RG050': { name: 'Red Grey 05', hex: '#A89A9B' },
   'RG080': { name: 'Red Grey 08', hex: '#8B7D7E' },
@@ -423,22 +425,64 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'MG020': { name: 'Blue Grey 02', hex: '#E2EAEE' },
   'GG020': { name: 'Green Grey 02', hex: '#E2EEE2' },
 
-  // New Pastels 48 (Blossoming)
-  'R090': { name: 'Rose Mist', hex: '#F5A2A2' },
+  // New Pastels 48 (Blossoming) - Names from image provided for this set
+  // Hexes approximated, names used from image (some IDs overlap with Honolulu 104)
+  'R090': { name: 'Rose Mist', hex: '#F5A2A2' }, // This was in 104 too, name is consistent
 
   // Grey Tones 36
   'WG0.5': { name: 'Warm Grey 0.5', hex: '#F5F1ED' },
+  // WG050: 'Warm Grey 05' - Already defined in Pastels 48
+  // WG01: 'Warm Grey 1' - Already defined in Honolulu 120
+  // WG4: 'Warm Grey 4' - Already defined in Honolulu 120
+  // WG09: 'Warm Grey 9' - Already defined in Honolulu 120
+  // CGII00: 'Cool Grey II 0' - Already defined in Honolulu 120
+  // BG050: 'Cool Grey 05' - Already defined in Pastels 48
+  // BG070: 'Cool Grey 07' - Already defined in Midtones 48
+  // CGII04: 'Cool Grey II 4' - Already defined in Honolulu 120
+  // CGII07: 'Cool Grey II 7' - Already defined in Honolulu 120
+  // CGII09: 'Cool Grey II 9' - Already defined in Honolulu 120
+  // CG020: 'Neutral Grey 02' - Already defined in Pastels 48
+  // CG2: 'Cool Grey II 2' - Already defined in Honolulu 120
+  // CG030: 'Neutral Grey 03' - Already defined in Honolulu 104 & New Pastels
+  // NG03: 'Neutral Grey 3' - Already defined in Honolulu 120
+  // CG5: 'Cool Grey II 5' - Already defined in Honolulu 120
+  // CG070: 'Neutral Grey 07' - Already defined in Midtones 48
+  // NG09: 'Neutral Grey 9' - Already defined in Honolulu 120
+  // MG020: 'Blue Grey 02' - Already defined in Pastels 48
+  // BGII03: 'Blue Grey II 3' - Already defined in Honolulu 120 & New Pastels
+  // MG060: 'Blue Grey 06' - Already defined in Midtones 48
+  // BGII05: 'Blue Grey II 5' - Already defined in Honolulu 120
+  // BGII09: 'Blue Grey II 9' - Already defined in Honolulu 120
+  // GG020: 'Green Grey 02' - Already defined in Pastels 48
+  // GG1: 'Green Grey 1' - Already defined in Honolulu 120 & New Pastels
+  // GG3: 'Green Grey 3' - Already defined in Honolulu 120
+  // GG060: 'Green Grey 06' - Already defined in Midtones 48
+  // GG5: 'Green Grey 5' - Already defined in Honolulu 120
+  // GG9: 'Green Grey 9' - Already defined in Honolulu 120
+  // YG040: 'Yellow Grey 04' - Already defined in Pastels 48
+  // YG080: 'Yellow Grey 08' - Already defined in Midtones 48
   'YG100': { name: 'Yellow Grey 100', hex: '#BFBFA8' },
+  // RG030: 'Red Grey 03' - Already defined in Pastels 48
+  // RG110: 'Red Grey 11' - Already defined in Pastels 48
+  // RG120: 'Red Grey 12' - Already defined in Pastels 48
+  // RG150: 'Red Grey 150' - Already defined in Midtones 48
 
   // Skin Tones 36
-  'Y145': { name: 'Buttercup Yellow', hex: '#FCEEB8' },
+  // Y4: 'Quince' - Already defined
+  // Y9: 'Yellow Ochre' - Already defined
+  // Y12: 'Mahogany' - Already defined
+  // Y13: 'Chestnut Brown' - Already defined
+  // Y121: 'Light Primrose' - Already defined
+  'Y145': { name: 'Buttercup Yellow', hex: '#FCEEB8' }, // Name from image, may differ from Y120
+  // YR1: 'Dark Yellow' - Already defined
+  // YR5: 'Terra Cotta' - Already defined
   'YR6': { name: 'Primary Yellow', hex: '#FDEB6E' },
   'YR7': { name: 'Cadmium Yellow', hex: '#F9E08C' },
   'YR8': { name: 'Salmon', hex: '#F9AA8F' },
-  'YR9': { name: 'Yellow Ochre', hex: '#D8BCA2' },
+  // YR9: 'Yellow Ochre' - Y9 is Yellow Ochre, YR9 might be different if image shows so. Image: "Yellow Orche"
   'YR10': { name: 'Brun', hex: '#D37D5B' },
   'YR20': { name: 'Morin', hex: '#FBE1B8' },
-  'YR34': { name: 'Yellow', hex: '#FBE59C' },
+  'YR34': { name: 'Yellow', hex: '#FBE59C' }, // Could clash with Y6 if hex is same
   'YR91': { name: 'Natural Oak', hex: '#AD6F49' },
   'YR92': { name: 'Chocolate', hex: '#B38B70' },
   'YR95': { name: 'Burnt Sienna', hex: '#AF6D4F' },
@@ -447,10 +491,19 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'YR205': { name: 'Powdery Orange', hex: '#FCDCB1' },
   'YR209': { name: 'Hazelnuts', hex: '#F9E7D6' },
   'YR212': { name: 'Milk White', hex: '#FFF8EE' },
+  // R18: 'Pastel Peach' - Already defined
+  // R19: 'Barely Beige' - Already defined
+  // R20: 'Powder Pink' - Already defined
+  // R21: 'Fruit Pink' - Already defined
   'R26': { name: 'Honey', hex: '#F8D3BB' },
   'R27': { name: 'Pale Mauve', hex: '#EBB9B1' },
-  'R28': { name: 'Colocasia Tonoimo', hex: '#D4AFAE' },
-  'R30': { name: 'Pale Cherry Pink', hex: '#FEE7EA' },
+  'R28': { name: 'Colocasia Tonoimo', hex: '#D4AFAE' }, // Name from image
+  // R29: 'Pear color' - Already defined
+  'R30': { name: 'Pale Cherry Pink', hex: '#FEE7EA' }, // Name from image, can clash with R080
+  // WG0.5: 'Warm Grey 0.5' - Already defined
+  // BR2: 'Potato Brown' - Already defined
+  // BR3: 'Rose Beige' - Already defined
+  // BR208: 'Black Brown' (light swatch) - Already defined
 };
 
 
@@ -465,74 +518,74 @@ const setMarkerIdLists: { setId: string, ids: string[] }[] = [
   { setId: 'ohuhu-skin-24', ids: skin24MarkerIDs },
   { setId: 'ohuhu-honolulu-168', ids: honolulu168MarkerIDs },
   { setId: 'ohuhu-honolulu-216', ids: honolulu216MarkerIDs },
+  { setId: 'ohuhu-honolulu-320', ids: honolulu320MarkerIDs },
 ];
 
 // This map will hold the consolidated marker data.
 const mergedMarkersMap = new Map<string, { name: string; hex: string; setIds: string[] }>();
 
-// Initialize with all known marker data, establishing the "canonical" name/hex
+// Step 1: Initialize with all known marker data from existingMarkerData,
+// establishing the "canonical" name/hex.
+// This ensures that if a marker ID is only in existingMarkerData and not in any set list,
+// it's still available (though it won't have any setIds initially).
 for (const id in existingMarkerData) {
   mergedMarkersMap.set(id, {
     name: existingMarkerData[id].name,
     hex: existingMarkerData[id].hex,
-    setIds: [],
+    setIds: [], // Initialize with empty setIds
   });
 }
 
-// Iterate through each defined set and its list of marker IDs
+// Step 2: Iterate through each defined set and its list of marker IDs
+// to populate the setIds array for each marker.
 setMarkerIdLists.forEach(setInfo => {
   setInfo.ids.forEach(id => {
-    let markerData = existingMarkerData[id];
-    if (!markerData) {
-      // console.warn(`Marker ID ${id} from set ${setInfo.setId} not found in existingMarkerData. Adding with defaults.`);
-      markerData = { name: id, hex: '#CCCCCC' }; // Default for safety
-      existingMarkerData[id] = markerData; // Add to existingMarkerData for future lookups if needed by other sets
-    }
-
     let markerEntry = mergedMarkersMap.get(id);
+
     if (markerEntry) {
-      // If marker exists, update name and hex if current set being processed has newer info (based on existingMarkerData)
-      markerEntry.name = markerData.name;
-      markerEntry.hex = markerData.hex;
+      // Marker already exists in the map (from existingMarkerData or another set)
+      // Add the current set's ID if not already present.
+      // The name and hex from existingMarkerData are considered canonical.
       if (!markerEntry.setIds.includes(setInfo.setId)) {
         markerEntry.setIds.push(setInfo.setId);
       }
     } else {
-      // This case means an ID was in a set's list but not initially in existingMarkerData
-      // (should be caught by the above block and added to existingMarkerData).
-      // Create it in mergedMarkersMap here.
+      // This case implies an ID was in a set's list but not in existingMarkerData.
+      // This shouldn't happen if existingMarkerData is comprehensive.
+      // For safety, create it here, using ID as name and a default hex.
+      // console.warn(`Marker ID ${id} from set ${setInfo.setId} not found in existingMarkerData. Adding with defaults.`);
       mergedMarkersMap.set(id, {
-        name: markerData.name,
-        hex: markerData.hex,
+        name: id, // Default name to ID
+        hex: '#CCCCCC', // Default hex
         setIds: [setInfo.setId],
       });
     }
   });
 });
 
-// Ensure Colorless Blender ('0') is correctly processed
-// It's often included in ID lists (like pastels48MarkerIDs), so the loop above usually handles it.
-// This is a safeguard.
+
+// Ensure Colorless Blender ('0') is correctly processed and associated,
+// especially if it was in existingMarkerData but not explicitly in every set list that contains it.
 const blenderData = existingMarkerData['0'];
 if (blenderData) {
   let blenderEntry = mergedMarkersMap.get('0');
   if (blenderEntry) {
+    // Update name/hex from canonical source if needed (though it should be set by initial loop)
     blenderEntry.name = blenderData.name;
     blenderEntry.hex = blenderData.hex;
-    // Ensure it's associated with at least one set if it wasn't in any specific ID list but existed in existingMarkerData
-    if (blenderEntry.setIds.length === 0) {
-        const defaultSetForBlender = 'ohuhu-honolulu-b'; // or any other appropriate default
-        if (!blenderEntry.setIds.includes(defaultSetForBlender) && INITIAL_MARKER_SETS.find(s => s.id === defaultSetForBlender)) {
-           // blenderEntry.setIds.push(defaultSetForBlender); // This line can be problematic if '0' is not in honolulu120MarkerIDs explicitly
-        }
-    }
+    // Ensure it's associated with sets that list it.
+    // The main loop (setMarkerIdLists.forEach) should handle this if '0' is in the ID lists.
+    // If '0' was only in existingMarkerData and NOT in any specific set's ID list,
+    // it wouldn't have any setIds. We might want to associate it with a default set,
+    // but current logic relies on ID lists for set association.
+    // The current setup is correct if '0' is included in the marker ID lists (e.g., honolulu120MarkerIDs).
   } else {
-    // This case means blender was in existingMarkerData but not in any of the set ID lists.
-    // And not picked up by the main loop. This is unlikely if '0' is in at least one set's ID list.
-     mergedMarkersMap.set('0', {
+    // This case implies '0' was in existingMarkerData but somehow not added to mergedMarkersMap. Highly unlikely.
+    // For safety, add it:
+    mergedMarkersMap.set('0', {
       name: blenderData.name,
       hex: blenderData.hex,
-      setIds: ['ohuhu-honolulu-b'], // Default association
+      setIds: honolulu120MarkerIDs.includes('0') ? ['ohuhu-honolulu-b'] : [], // Example default
     });
   }
 }
@@ -544,9 +597,23 @@ mergedMarkersMap.forEach((value, key) => {
     id: key,
     name: value.name,
     hex: value.hex,
-    setIds: value.setIds.length > 0 ? [...new Set(value.setIds)] : [], // Ensure unique setIds and handle empty
+    setIds: value.setIds.length > 0 ? [...new Set(value.setIds)] : [],
   });
 });
+
+// Make sure '0' is included if it was defined
+if (existingMarkerData['0'] && !finalInitialMarkers.find(m => m.id === '0')) {
+    const blenderMarker = mergedMarkersMap.get('0');
+    if (blenderMarker) {
+         finalInitialMarkers.push({
+            id: '0',
+            name: blenderMarker.name,
+            hex: blenderMarker.hex,
+            setIds: blenderMarker.setIds,
+        });
+    }
+}
+
 
 const tempFinalMarkers = finalInitialMarkers;
 export { tempFinalMarkers as INITIAL_MARKERS };
@@ -565,3 +632,4 @@ export const COMMON_COLORS_FILTER = [
   { name: "Black", hexBase: "#000000" },
   { name: "White", hexBase: "#FFFFFF" },
 ];
+
