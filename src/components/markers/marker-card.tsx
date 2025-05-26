@@ -34,7 +34,7 @@ export function MarkerCard({ marker, markerSets, onSelectMarkerForShades, isOwne
     )}>
       <CardHeader className="p-0">
         <div
-          className="h-20 w-full" 
+          className="h-12 w-full" 
           style={{ backgroundColor: marker.hex }}
           aria-label={`Color preview for ${marker.name}`}
         />
@@ -49,7 +49,7 @@ export function MarkerCard({ marker, markerSets, onSelectMarkerForShades, isOwne
       </CardHeader>
       <CardContent className="flex-grow p-2 space-y-0.5"> 
         <CardTitle className="mb-0.5 text-sm leading-tight">{marker.name}</CardTitle> 
-        <p className="text-xs text-muted-foreground">{marker.id}</p>
+        <p className="text-xs font-semibold text-foreground/90">{marker.id}</p>
         {/* Set information was removed in a previous request */}
       </CardContent>
       <CardFooter className="p-2 pt-0 flex flex-col space-y-1"> 
