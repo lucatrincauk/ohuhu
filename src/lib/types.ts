@@ -7,7 +7,7 @@ export interface Marker {
 
 export interface MarkerSet {
   id: string; // Unique identifier for the set
-  name: string; // Name of the marker set, e.g., "Ohuhu Honolulu B - 216 Colors"
+  name: string; // Name of the marker set, e.g., "Honolulu B - 216 Colors"
 }
 
 export type MarkerInventoryItem = {

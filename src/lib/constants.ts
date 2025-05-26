@@ -2,8 +2,8 @@
 import type { Marker, MarkerSet } from './types';
 
 export const INITIAL_MARKER_SETS: MarkerSet[] = [
-  { id: 'ohuhu-honolulu-b', name: 'Ohuhu Honolulu 120 Set' },
-  { id: 'ohuhu-104', name: 'Ohuhu 104 Set' },
+  { id: 'ohuhu-honolulu-b', name: 'Honolulu 120' },
+  { id: 'ohuhu-104', name: 'Honolulu 104' },
   { id: 'ohuhu-midtones-48', name: 'Honolulu Midtones 48' },
 ];
 
@@ -23,7 +23,7 @@ const honolulu120MarkerIDs: string[] = [
   'YR5', 'YR33', '120'
 ];
 
-// User-provided list of 104 marker IDs for the Ohuhu 104 Set
+// User-provided list of 104 marker IDs for the Honolulu 104
 const ohuhu104MarkerIDs: string[] = [
   'B080', 'B090', 'B110', 'B180', 'B190', 'B270', 'B440', 'BG060', 'BR208', 'CG030',
   'E010', 'E030', 'E080', 'E120', 'E130', 'E160', 'E260', 'E370', 'E430', 'E432',
@@ -38,7 +38,7 @@ const ohuhu104MarkerIDs: string[] = [
   'YR172', 'YR180', 'YR220'
 ];
 
-// Honolulu Midtones 48 Set IDs
+// Honolulu Midtones 48 IDs
 const honoluluMidtones48MarkerIDs: string[] = [
   'Y050', 'Y260', 'Y270', 'YR170', 'YR190', 'YR250', 'YR260', 'R160', 'R200', 'R280',
   'RV070', 'RV080', 'RV200', 'RV270', 'RV320', 'V060', 'V160', 'V250', 'V270', 'V370',
@@ -170,7 +170,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   '120': { name: 'Black', hex: '#000000' },
   '0': { name: 'Colorless Blender', hex: '#FFFFFF' },
 
-  // Ohuhu 104 Set names based on image
+  // Honolulu 104 names based on image
   'Y010': { name: 'Primrose', hex: '#FDF4A5' },
   'Y121': { name: 'Primrose', hex: '#FDF4A5' },
   'Y040': { name: 'Calamansi', hex: '#F9EC8F' },
@@ -275,7 +275,7 @@ const existingMarkerData: Record<string, { name: string; hex: string }> = {
   'FY030': { name: 'Fluorescent Red', hex: '#FF0050' },
   'FY050': { name: 'Fluorescent Violet', hex: '#BC13FE' },
 
-  // Honolulu Midtones 48 Set
+  // Honolulu Midtones 48
   'Y050': { name: 'Summer Lemon', hex: '#FFFACD' },
   'Y260': { name: 'Yellow Dahlia', hex: '#FFF8DC' },
   'Y270': { name: 'Pale Ocre', hex: '#FAF0E6' }, // Corrected spelling
