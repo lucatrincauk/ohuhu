@@ -20,18 +20,17 @@ export function MarkerGrid({ markers, markerSets, onSelectMarkerForShades, owned
     );
   }
 
-  // Ensure ownedSetIds is treated as an empty array if undefined/null for consistent .includes() behavior
   const currentOwnedSetIds = ownedSetIds || [];
 
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 p-2 md:p-3">
       {markers.map((marker) => (
         <MarkerCard
-          key={`${marker.id}-${marker.setId}`}
+          key={marker.id} // Key is now just marker.id as it will be unique in the markers array
           marker={marker}
           markerSets={markerSets}
           onSelectForShades={onSelectMarkerForShades}
-          isOwned={currentOwnedSetIds.includes(marker.setId)}
+          isOwned={marker.setIds.some(sid => currentOwnedSetIds.includes(sid))}
         />
       ))}
     </div>

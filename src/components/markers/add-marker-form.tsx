@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,14 +28,15 @@ import { useState, useEffect } from 'react';
 
 const hexColorRegex = /^#([0-9A-Fa-f]{3}){1,2}$/;
 
-const addMarkerFormSchema = z.object({
+// This schema is for form input, not directly for the Marker type with setIds
+export const addMarkerFormSchema = z.object({
   id: z.string().min(1, { message: 'Marker ID is required.' }),
   name: z.string().min(1, { message: 'Marker name is required.' }),
   hex: z.string().regex(hexColorRegex, { message: 'Invalid hex color format (e.g., #RRGGBB or #RGB).' }),
-  setId: z.string().min(1, { message: 'Please select a marker set.' }),
+  setId: z.string().min(1, { message: 'Please select a marker set for this new marker.' }),
 });
 
-type AddMarkerFormValues = z.infer<typeof addMarkerFormSchema>;
+export type AddMarkerFormValues = z.infer<typeof addMarkerFormSchema>;
 
 interface AddMarkerFormProps {
   markerSets: MarkerSet[];
@@ -66,7 +68,7 @@ export function AddMarkerForm({ markerSets, onAddMarker }: AddMarkerFormProps) {
   }, [watchedHex]);
 
   function onSubmit(data: AddMarkerFormValues) {
-    onAddMarker(data);
+    onAddMarker(data); // The context's addMarker will handle converting setId to setIds: [setId]
     toast({
       title: 'Marker Added',
       description: `${data.name} (${data.id}) has been added to your inventory.`,

@@ -8,14 +8,23 @@ import { cn } from '@/lib/utils';
 
 interface MarkerCardProps {
   marker: Marker;
-  markerSets: MarkerSet[]; // Added markerSets prop
-  onSelectForShades?: (marker: Marker) => void;
+  markerSets: MarkerSet[];
+  onSelectMarkerForShades?: (marker: Marker) => void;
   isOwned?: boolean;
 }
 
-export function MarkerCard({ marker, markerSets, onSelectForShades, isOwned = true }: MarkerCardProps) {
-  const set = markerSets.find(s => s.id === marker.setId);
-  const setName = set ? set.name : 'Unknown Set';
+export function MarkerCard({ marker, markerSets, onSelectMarkerForShades, isOwned = true }: MarkerCardProps) {
+  
+  let setNameDisplay = 'Unknown Set';
+  if (marker.setIds && marker.setIds.length > 0) {
+    if (marker.setIds.length === 1) {
+      const set = markerSets.find(s => s.id === marker.setIds[0]);
+      setNameDisplay = set ? set.name : 'Unknown Set';
+    } else {
+      setNameDisplay = 'Multiple Sets';
+    }
+  }
+
 
   return (
     <Card className={cn(
@@ -24,7 +33,7 @@ export function MarkerCard({ marker, markerSets, onSelectForShades, isOwned = tr
     )}>
       <CardHeader className="p-0">
         <div
-          className="h-20 w-full" // Reduced height slightly
+          className="h-20 w-full" 
           style={{ backgroundColor: marker.hex }}
           aria-label={`Color preview for ${marker.name}`}
         />
@@ -37,21 +46,21 @@ export function MarkerCard({ marker, markerSets, onSelectForShades, isOwned = tr
           </div>
         )}
       </CardHeader>
-      <CardContent className="flex-grow p-2 space-y-0.5"> {/* Reduced padding */}
-        <CardTitle className="mb-0.5 text-sm leading-tight">{marker.name}</CardTitle> {/* Reduced font size & margin */}
+      <CardContent className="flex-grow p-2 space-y-0.5"> 
+        <CardTitle className="mb-0.5 text-sm leading-tight">{marker.name}</CardTitle> 
         <p className="text-xs text-muted-foreground">ID: {marker.id}</p>
-        <p className="text-xs text-muted-foreground" title={setName}>Set: <span className="truncate">{setName}</span></p> {/* Added set name */}
+        <p className="text-xs text-muted-foreground" title={setNameDisplay}>Set: <span className="truncate">{setNameDisplay}</span></p> 
       </CardContent>
-      <CardFooter className="p-2 pt-0 flex flex-col space-y-1"> {/* Reduced padding & space */}
-        {onSelectForShades && (
+      <CardFooter className="p-2 pt-0 flex flex-col space-y-1"> 
+        {onSelectMarkerForShades && (
           <Button
             variant="outline"
             size="sm"
-            className="w-full h-7 text-xs" // Reduced height and text size
-            onClick={() => onSelectForShades(marker)}
+            className="w-full h-7 text-xs" 
+            onClick={() => onSelectMarkerForShades(marker)}
             aria-label={`Generate shades for ${marker.name}`}
           >
-            <Palette className="mr-1.5 h-3.5 w-3.5" /> {/* Adjusted icon margin */}
+            <Palette className="mr-1.5 h-3.5 w-3.5" /> 
             Shades
           </Button>
         )}

@@ -2,7 +2,7 @@ export interface Marker {
   id: string; // User-defined ID, e.g., "R12" or a unique number like "101"
   name: string;
   hex: string; // Hex color code, e.g., "#A59AC4"
-  setId: string; // ID of the marker set it belongs to
+  setIds: string[]; // IDs of the marker sets it belongs to
 }
 
 export interface MarkerSet {

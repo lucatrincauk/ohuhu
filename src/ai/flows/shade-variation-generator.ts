@@ -11,7 +11,15 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { MarkerInventoryItem } from '@/lib/types'; // Assuming MarkerInventoryItem is defined in types
+// Assuming MarkerInventoryItem is defined in types, it might need adjustment if it uses setIds[] too.
+// For AI input, we simplify it to a single setId.
+type MarkerInventoryItemForAI = {
+  id: string;
+  name: string;
+  hex: string;
+  setId: string; // AI flow expects a single setId for simplicity
+};
+
 
 const GenerateShadeVariationsInputSchema = z.object({
   hexColor: z
@@ -30,9 +38,9 @@ const GenerateShadeVariationsInputSchema = z.object({
       id: z.string().describe('The unique identifier of the marker.'),
       name: z.string().describe('The name of the marker.'),
       hex: z.string().describe('The hex value of the marker color.'),
-      setId: z.string().describe('The ID of the marker set this marker belongs to.'),
+      setId: z.string().describe('The ID of the marker set this marker belongs to (primary ID for AI context).'),
     })
-  ).describe('The user\u2019s marker inventory, an array of marker objects.'),
+  ).describe('The user\u2019s marker inventory, an array of marker objects, each with a primary setId for AI processing.'),
 });
 export type GenerateShadeVariationsInput = z.infer<typeof GenerateShadeVariationsInputSchema>;
 
@@ -40,7 +48,7 @@ const ShadeVariationOutputItemSchema = z.object({
   id: z.string().describe('The ID of the suggested marker from the inventory.'),
   name: z.string().describe('The name of the suggested marker from the inventory.'),
   hex: z.string().regex(/^#([0-9A-Fa-f]{3}){1,2}$/).describe('The hex color code of the suggested marker.'),
-  setId: z.string().describe('The ID of the marker set this marker belongs to.'),
+  setId: z.string().describe('The ID of the marker set this marker was considered from in the AI context.'), // This setId is context specific for the AI's choice
 });
 
 const GenerateShadeVariationsOutputSchema = z.object({
@@ -65,7 +73,7 @@ const prompt = ai.definePrompt({
   Base Color: {{{hexColor}}}
   Number of Shades to Suggest (including base color match): {{{numShades}}}
 
-  Marker Inventory:
+  Marker Inventory (each marker provided with one of its set IDs for context):
   {{#each markerInventory}}
   - ID: {{this.id}}, Name: {{this.name}}, Hex: {{this.hex}}, SetID: {{this.setId}}
   {{/each}}
@@ -75,10 +83,10 @@ const prompt = ai.definePrompt({
   2. Based on the \`numShades\` parameter, select additional markers from the inventory to create a palette of lighter and darker variations around the base color match.
   3. The total number of returned markers should be exactly \`numShades\`.
   4. Prioritize markers that create a harmonious and visually appealing sequence of shades.
-  5. Return the selected markers as an array of objects, each containing 'id', 'name', 'hex', and 'setId'.
+  5. Return the selected markers as an array of objects, each containing 'id', 'name', 'hex', and 'setId' (the setId it was picked from in the provided inventory list).
   6. If the inventory is small or lacks good variations, try your best to pick the closest available options. If no reasonable shades can be found, you can return fewer than numShades, or an empty array if truly nothing fits.
   7. Ensure the final output is an object with a 'shades' property containing the array of marker objects.
-  Return the list of shades as marker objects from the inventory. Do not include any explanations or additional text outside the JSON structure.`,
+  Return the list of shades as marker objects from the inventory. Do not include any explanations or additional text outside the JSON structure. Do not include similarity scores.`,
 });
 
 const generateShadeVariationsFlow = ai.defineFlow(
@@ -88,13 +96,10 @@ const generateShadeVariationsFlow = ai.defineFlow(
     outputSchema: GenerateShadeVariationsOutputSchema,
   },
   async input => {
-    // Ensure numShades is reasonable given inventory size, though the prompt handles it
     if (input.markerInventory.length < input.numShades && input.markerInventory.length > 0) {
-      // The AI should handle this, but as a fallback we could adjust numShades here
       // console.warn(`Requested ${input.numShades} shades, but inventory only has ${input.markerInventory.length}. AI will attempt to pick the best available.`);
     }
     const {output} = await prompt(input);
     return output!;
   }
 );
-

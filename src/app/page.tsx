@@ -116,8 +116,8 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
   const { r: mr, g: mg, b: mb } = markerRgb;
   const markerHsl = rgbToHsl(mr, mg, mb);
   
-  const sThresholdChromatic = 0.10; // Min saturation to be considered a "color" vs grey (was 0.12)
-  const sThresholdGrey = 0.20;    // Max saturation to be considered for "grey" categories
+  const sThresholdChromatic = 0.10; 
+  const sThresholdGrey = 0.20;    
 
   // Greyscale checks first
   if (categoryHex === "#000000") { // Black
@@ -132,34 +132,34 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
 
   // Chromatic color checks
   if (categoryHex === "#FF0000") { // Red
-    return (markerHsl.h >= 330 || markerHsl.h <= 25) && markerHsl.s >= sThresholdChromatic; // Wider range
+    return (markerHsl.h >= 330 || markerHsl.h <= 25) && markerHsl.s >= sThresholdChromatic; 
   }
   if (categoryHex === "#FFA500") { // Orange
-    return (markerHsl.h > 20 && markerHsl.h <= 50) && markerHsl.s >= sThresholdChromatic; // Range seems okay
+    return (markerHsl.h > 20 && markerHsl.h <= 50) && markerHsl.s >= sThresholdChromatic; 
   }
   if (categoryHex === "#FFFF00") { // Yellow
-    return (markerHsl.h > 48 && markerHsl.h <= 72) && markerHsl.s >= sThresholdChromatic;  // Wider range
+    return (markerHsl.h > 48 && markerHsl.h <= 72) && markerHsl.s >= sThresholdChromatic;  
   }
   if (categoryHex === "#008000") { // Green
-    return (markerHsl.h > 70 && markerHsl.h <= 165) && markerHsl.s >= sThresholdChromatic; // Wider range
+    return (markerHsl.h > 70 && markerHsl.h <= 165) && markerHsl.s >= sThresholdChromatic; 
   }
   if (categoryHex === "#0000FF") { // Blue
-    return (markerHsl.h > 160 && markerHsl.h <= 265) && markerHsl.s >= sThresholdChromatic; // Wider range
+    return (markerHsl.h > 160 && markerHsl.h <= 265) && markerHsl.s >= sThresholdChromatic; 
   }
   if (categoryHex === "#800080") { // Purple
-    return (markerHsl.h > 260 && markerHsl.h < 340) && markerHsl.s >= sThresholdChromatic; // Wider range
+    return (markerHsl.h > 260 && markerHsl.h < 340) && markerHsl.s >= sThresholdChromatic; 
   }
   if (categoryHex === "#FFC0CB") { // Pink
     return (
-        ( (markerHsl.h >= 320 || markerHsl.h <= 20) && markerHsl.l >= 0.55 ) || // Adjusted lightness threshold
-        ( markerHsl.h >= 295 && markerHsl.h < 335 && markerHsl.l >= 0.50 )  // Broader hue, adjusted L
+        ( (markerHsl.h >= 320 || markerHsl.h <= 20) && markerHsl.l >= 0.55 ) || 
+        ( markerHsl.h >= 295 && markerHsl.h < 335 && markerHsl.l >= 0.50 )  
     ) && markerHsl.s >= sThresholdChromatic;
   }
   if (categoryHex === "#A52A2A") { // Brown
     return (
-      (markerHsl.h >= 8 && markerHsl.h <= 55) && // Wider hue range
-      markerHsl.s >= 0.05 && markerHsl.s <= 0.75 && // Slightly wider saturation
-      markerHsl.l >= 0.08 && markerHsl.l <= 0.65   // Slightly wider lightness
+      (markerHsl.h >= 8 && markerHsl.h <= 55) && 
+      markerHsl.s >= 0.05 && markerHsl.s <= 0.75 && 
+      markerHsl.l >= 0.08 && markerHsl.l <= 0.65   
     );
   }
 
@@ -191,10 +191,10 @@ export default function OhuhuHarmonyPage() {
       if (ownedSetIds.length === 0) {
         tempResults = []; 
       } else {
-        tempResults = tempResults.filter(marker => ownedSetIds.includes(marker.setId));
+        tempResults = tempResults.filter(marker => marker.setIds.some(sid => ownedSetIds.includes(sid)));
       }
     } else if (selectedSetId) { 
-      tempResults = tempResults.filter(marker => marker.setId === selectedSetId);
+      tempResults = tempResults.filter(marker => marker.setIds.includes(selectedSetId));
     }
     
 
@@ -230,9 +230,8 @@ export default function OhuhuHarmonyPage() {
             const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
             const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
             
-            // For chromatic colors with same hue, sort by lightness (lighter to darker)
             if (hslA.s >= 0.1 && hslB.s >= 0.1) { 
-              return hslA.l - hslB.l; // Ascending lightness (lighter first)
+              return hslA.l - hslB.l; 
             }
             return 0;
           }
@@ -274,7 +273,7 @@ export default function OhuhuHarmonyPage() {
   }
 
   const handleAddMarkerAndReturnToPalette = (markerData: AddMarkerFormValues) => {
-    addMarker(markerData);
+    addMarker({ ...markerData, setId: markerData.setId }); // Ensure addMarker in context handles conversion to setIds
     setActivePageContent('palette');
     setActiveSidebarContent(null);
   };

@@ -81,9 +81,9 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
 
 function getHueFromHex(hex: string): number {
   const rgb = hexToRgb(hex);
-  if (!rgb) return 361; // Return a high value for sorting if hex is invalid
+  if (!rgb) return 361; 
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-  if (hsl.s < 0.1) { // Low saturation (greyscale)
+  if (hsl.s < 0.1) { 
     return 360 + (1 - hsl.l) * 100; 
   }
   return hsl.h;
@@ -99,7 +99,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [selectedMarkerIdForTrigger, setSelectedMarkerIdForTrigger] = useState<string>("");
   const [searchScope, setSearchScope] = useState<'all' | 'owned'>('all');
-  const { ownedSetIds, markerSets } = useMarkerData();
+  const { ownedSetIds, markerSets, getMarkerById } = useMarkerData(); // Added getMarkerById
 
   const sortedInventory = useMemo(() => {
     return [...inventory].sort((a, b) => getHueFromHex(a.hex) - getHueFromHex(b.hex));
@@ -160,7 +160,7 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
         });
         return;
       }
-      inventoryToSearch = inventory.filter(marker => ownedSetIds.includes(marker.setId));
+      inventoryToSearch = inventory.filter(marker => marker.setIds.some(sid => ownedSetIds.includes(sid)));
       if (inventoryToSearch.length === 0) {
          toast({
           title: 'No Markers in Owned Sets',
@@ -194,11 +194,12 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     setIsLoading(true);
     setGeneratedShades([]);
 
+    // For AI, simplify markers to have a single setId (e.g., the first one)
     const markerInventoryForAI = inventoryToSearch.map(m => ({
       id: m.id,
       name: m.name,
       hex: m.hex,
-      setId: m.setId,
+      setId: m.setIds[0] || '', // Pass the first setId or an empty string if none
     }));
 
     const input: GenerateShadeVariationsInput = {
@@ -382,14 +383,20 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
           <div className="mt-4 space-y-2">
             <h4 className="font-semibold">Suggested Shades:</h4>
              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 p-0">
-              {generatedShades.map((shade, index) => (
-                <MarkerCard
-                  key={shade.id + '-' + index}
-                  marker={{ id: shade.id, name: shade.name, hex: shade.hex, setId: shade.setId }}
-                  markerSets={markerSets}
-                  isOwned={ownedSetIds.includes(shade.setId)}
-                />
-              ))}
+              {generatedShades.map((shadeResult) => {
+                // Look up the full marker from inventory using the ID from the AI result
+                const fullMarker = getMarkerById(shadeResult.id);
+                if (!fullMarker) return null; // Should not happen if AI picks from inventory
+
+                return (
+                  <MarkerCard
+                    key={fullMarker.id} // Use the unique ID from the full marker data
+                    marker={fullMarker}
+                    markerSets={markerSets}
+                    isOwned={fullMarker.setIds.some(sid => ownedSetIds.includes(sid))}
+                  />
+                );
+              })}
             </div>
           </div>
         )}
@@ -397,4 +404,3 @@ export function ShadeVariationGenerator({ inventory, selectedMarkerForShades, on
     </Card>
   );
 }
-

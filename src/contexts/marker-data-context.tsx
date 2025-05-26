@@ -14,8 +14,8 @@ export interface MarkerDataContextType {
   markerSets: MarkerSet[];
   ownedSetIds: string[];
   isInitialized: boolean;
-  addMarker: (newMarker: Omit<Marker, 'id'> & { id?: string }) => void;
-  updateMarker: (markerId: string, updates: Partial<Omit<Marker, 'id'>>) => void;
+  addMarker: (newMarkerData: { id?: string; name: string; hex: string; setId: string }) => void;
+  updateMarker: (markerId: string, updates: Partial<Omit<Marker, 'id' | 'setIds'>>) => void; // setIds is not directly updatable here
   getMarkerById: (id: string) => Marker | undefined;
   addMarkerSet: (newSet: Omit<MarkerSet, 'id'> & { id?: string }) => void;
   updateOwnedSetIds: (newOwnedSetIds: string[]) => void;
@@ -42,12 +42,11 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
       if (storedOwnedSetIds) {
         setOwnedSetIdsState(JSON.parse(storedOwnedSetIds));
       } else {
-        setOwnedSetIdsState([]); // Default to owning no sets
+        setOwnedSetIdsState([]); 
         localStorage.setItem(OWNED_SETS_STORAGE_KEY, JSON.stringify([]));
       }
     } catch (error) {
       console.error("Failed to access localStorage or initialize data:", error);
-      // Fallback to in-memory constants if localStorage fails
       setMarkersState(INITIAL_MARKERS);
       setMarkerSetsState(INITIAL_MARKER_SETS);
       setOwnedSetIdsState([]);
@@ -63,16 +62,21 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   }, []);
 
-  const addMarker = useCallback((newMarker: Omit<Marker, 'id'> & { id?: string }) => {
-    const markerWithId: Marker = { ...newMarker, id: newMarker.id || `custom-${Date.now()}` };
+  const addMarker = useCallback((newMarkerData: { id?: string; name: string; hex: string; setId: string }) => {
+    const markerWithIdAndSetIds: Marker = {
+      id: newMarkerData.id || `custom-${Date.now()}`,
+      name: newMarkerData.name,
+      hex: newMarkerData.hex,
+      setIds: [newMarkerData.setId], // New custom markers belong to one set initially
+    };
     setMarkersState(prevMarkers => {
-      const updatedMarkers = [...prevMarkers, markerWithId];
+      const updatedMarkers = [...prevMarkers, markerWithIdAndSetIds];
       updateLocalStorage(MARKERS_STORAGE_KEY, updatedMarkers);
       return updatedMarkers;
     });
   }, [updateLocalStorage]);
   
-  const updateMarker = useCallback((markerId: string, updates: Partial<Omit<Marker, 'id'>>) => {
+  const updateMarker = useCallback((markerId: string, updates: Partial<Omit<Marker, 'id' | 'setIds'>>) => {
     setMarkersState(prevMarkers => {
       const updatedMarkers = prevMarkers.map(marker =>
         marker.id === markerId ? { ...marker, ...updates } : marker
