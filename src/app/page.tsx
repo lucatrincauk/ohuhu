@@ -12,18 +12,15 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { AppLogo } from '@/components/core/app-logo';
-// import { AddMarkerForm } from '@/components/markers/add-marker-form'; // Removed
-// import type { AddMarkerFormValues } from '@/components/markers/add-marker-form'; // Removed
 import { MarkerGrid } from '@/components/markers/marker-grid';
-import { SimilarColorFinder } from '@/components/tools/similar-color-finder';
-import { ShadeVariationGenerator } from '@/components/tools/shade-variation-generator';
+import { ColorExplorer } from '@/components/tools/color-explorer'; // New import
 import { ManageSetsPage } from '@/components/profile/manage-sets';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import type { Marker } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, PlusSquare, SearchCode, Layers, ListFilter, Menu, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc } from 'lucide-react';
+import { Palette, SearchCode, Layers, ListFilter, Menu, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc, Compass } from 'lucide-react'; // Added Compass
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -45,7 +42,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 
-type ActivePageContentType = 'palette' | 'similar' | 'shades' | 'sets'; // Removed 'add'
+type ActivePageContentType = 'palette' | 'explorer' | 'sets'; // Updated
 type ActiveSidebarContentType = null;
 type SortOrder = 'hue' | 'id' | 'name';
 type SetFilterValue = string | null | '__owned__';
@@ -177,7 +174,7 @@ export default function OhuhuHarmonyPage() {
   const [activePageContent, setActivePageContent] = useState<ActivePageContentType>('palette');
   const [activeSidebarContent, setActiveSidebarContent] = useState<ActiveSidebarContentType>(null);
 
-  const [selectedMarkerForShades, setSelectedMarkerForShades] = useState<Marker | null>(null);
+  const [selectedMarkerForExplorer, setSelectedMarkerForExplorer] = useState<Marker | null>(null); // Renamed
   const [searchTerm, setSearchTerm] = useState<string>('');
   const { toast } = useToast();
 
@@ -262,23 +259,22 @@ export default function OhuhuHarmonyPage() {
     }
   };
 
-  const handleSelectMarkerForShades = (marker: Marker) => {
-    setSelectedMarkerForShades(marker);
-    setActivePageContent('shades');
+  const handleSelectMarkerForExplorer = (marker: Marker) => { // Renamed
+    setSelectedMarkerForExplorer(marker);
+    setActivePageContent('explorer');
     setActiveSidebarContent(null);
   };
 
-  const clearSelectedMarkerForShades = () => {
-    setSelectedMarkerForShades(null);
+  const clearSelectedMarkerForExplorer = () => { // Renamed
+    setSelectedMarkerForExplorer(null);
   }
 
-  // Removed handleAddMarkerAndReturnToPalette
 
   const handleNavigateToPaletteWithSetFilter = (setId: string) => {
     setActivePageContent('palette');
     setSelectedSetId(setId);
-    setSelectedColorCategory(null); // Reset color filter
-    setSearchTerm(''); // Reset search term
+    setSelectedColorCategory(null); 
+    setSearchTerm(''); 
   };
 
 
@@ -298,22 +294,24 @@ export default function OhuhuHarmonyPage() {
         return <MarkerGrid
                   markers={displayedMarkers}
                   markerSets={markerSets}
-                  onSelectMarkerForShades={handleSelectMarkerForShades}
+                  onSelectMarkerForShades={handleSelectMarkerForExplorer} // Updated prop name
                   ownedSetIds={ownedSetIds}
                 />;
-      // case 'add': // Removed
-      //   return <div className="p-4 md:p-6 max-w-2xl mx-auto"><AddMarkerForm markerSets={markerSets} onAddMarker={handleAddMarkerAndReturnToPalette} /></div>;
-      case 'similar':
-        return <div className="p-4 md:p-6 max-w-2xl mx-auto"><SimilarColorFinder inventory={allMarkers} /></div>;
-      case 'shades':
-        return <div className="p-4 md:p-6 max-w-2xl mx-auto"><ShadeVariationGenerator inventory={allMarkers} selectedMarkerForShades={selectedMarkerForShades} onClearSelectedMarker={clearSelectedMarkerForShades} /></div>;
+      case 'explorer':
+        return <div className="p-4 md:p-6 max-w-2xl mx-auto">
+                 <ColorExplorer 
+                    inventory={allMarkers} 
+                    initialSelectedMarker={selectedMarkerForExplorer}
+                    onClearSelectedMarker={clearSelectedMarkerForExplorer}
+                  />
+               </div>;
       case 'sets':
         return <ManageSetsPage onViewSetActive={handleNavigateToPaletteWithSetFilter} />;
       default:
         return <MarkerGrid
                   markers={displayedMarkers}
                   markerSets={markerSets}
-                  onSelectMarkerForShades={handleSelectMarkerForShades}
+                  onSelectMarkerForShades={handleSelectMarkerForExplorer} // Updated prop name
                   ownedSetIds={ownedSetIds}
                 />;
     }
@@ -332,16 +330,15 @@ export default function OhuhuHarmonyPage() {
   }
 
   const sidebarButtons: SidebarButtonConfig[] = [
-    { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: () => { setActivePageContent('palette'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
-    // { id: 'add', name: "Add Marker", Icon: PlusSquare, type: 'main', action: () => { setActivePageContent('add'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }}, // Removed
-    { id: 'similar', name: "Similar Colors", Icon: SearchCode, type: 'main', action: () => { setActivePageContent('similar'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
-    { id: 'shades', name: "Shade Variations", Icon: Layers, type: 'main', action: () => { setActivePageContent('shades'); setActiveSidebarContent(null); setSearchTerm(''); }},
-    { id: 'sets', name: "My Sets", Icon: Library, type: 'main', action: () => { setActivePageContent('sets'); setActiveSidebarContent(null); setSelectedMarkerForShades(null); setSearchTerm(''); }},
+    { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: () => { setActivePageContent('palette'); setActiveSidebarContent(null); setSelectedMarkerForExplorer(null); setSearchTerm(''); }},
+    { id: 'explorer', name: "Color Explorer", Icon: Compass, type: 'main', action: () => { setActivePageContent('explorer'); setActiveSidebarContent(null); setSearchTerm(''); }}, // Updated
+    { id: 'sets', name: "My Sets", Icon: Library, type: 'main', action: () => { setActivePageContent('sets'); setActiveSidebarContent(null); setSelectedMarkerForExplorer(null); setSearchTerm(''); }},
   ];
 
   const getHeaderTitle = () => {
     if (activePageContent === 'palette') return "My Marker Palette";
     if (activePageContent === 'sets') return "My Sets";
+    if (activePageContent === 'explorer') return "Color Explorer"; // New
     const activeButton = sidebarButtons.find(btn => btn.id === activePageContent);
     return activeButton ? activeButton.name : "Ohuhu Harmony";
   };
