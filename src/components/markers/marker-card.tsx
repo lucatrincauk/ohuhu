@@ -29,8 +29,8 @@ export function MarkerCard({ marker, markerSets, onSelectMarkerForShades, isOwne
 
   return (
     <Card className={cn(
-      "flex flex-col overflow-hidden transition-all hover:shadow-lg relative",
-      { "opacity-70 border-dashed border-muted-foreground/30": !isOwned }
+      "flex flex-col overflow-hidden transition-all hover:shadow-lg relative"
+      // Removed: { "opacity-70 border-dashed border-muted-foreground/30": !isOwned }
     )}>
       <CardHeader className="p-0">
         <div
