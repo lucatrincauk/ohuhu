@@ -20,7 +20,7 @@ import type { Marker } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, Search, Tags, LayoutGrid, ChevronDown, Library, SortAsc, Compass, Menu, ListFilter } from 'lucide-react';
+import { Palette, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, Menu, ListFilter, SortAsc } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -98,7 +98,7 @@ function getHueFromHex(hex: string): number {
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
   if (hsl.s < 0.1) { // Low saturation (greyscale)
     // Sort greys by lightness (dark to light), mapped to a high hue range
-    return 360 + (1 - hsl.l) * 100; // e.g., black (l=0) -> 460, white (l=1) -> 360
+    return 360 + hsl.l * 100; // black (l=0) -> hue 360, white (l=1) -> hue 460. Sorts dark to light.
   }
   return hsl.h;
 }
@@ -229,10 +229,12 @@ export default function OhuhuHarmonyPage() {
             const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
             const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
             
+            // For chromatic colors with same hue, sort by lightness (darker first)
             if (hslA.s >= 0.1 && hslB.s >= 0.1) { 
-              return hslA.l - hslB.l; 
+              return hslB.l - hslA.l; // Darker shades first
             }
-            return 0;
+            // For greyscale colors, already handled by hue calculation giving darker first
+            return hslB.l - hslA.l; // Consistent darker first if hues were somehow identical for different greys
           }
           return 0;
         }
@@ -550,3 +552,5 @@ export default function OhuhuHarmonyPage() {
   );
 }
 
+
+    
