@@ -94,14 +94,18 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
 
 function getHueFromHex(hex: string): number {
   const rgb = hexToRgb(hex);
-  if (!rgb) return 361; // Return a high value for sorting if hex is invalid
+  if (!rgb) return 461; // Sort invalid hex codes last
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-  if (hsl.s < 0.1) { // Low saturation (greyscale)
-    // Sort greys by lightness (dark to light), mapped to a high hue range
-    return 360 + hsl.l * 100; // black (l=0) -> hue 360, white (l=1) -> hue 460. Sorts dark to light.
+  
+  // Greyscale colors (low saturation)
+  // Assign them a high "hue" value to group them after chromatic colors.
+  // Sort them by lightness (dark to light).
+  if (hsl.s < 0.1) { 
+    return 360 + hsl.l * 100; // black (l=0) -> hue 360, white (l=1) -> hue 460
   }
-  return hsl.h;
+  return hsl.h; // Return actual hue for chromatic colors
 }
+
 
 function isColorInCategory(markerHex: string, categoryHex: string): boolean {
   const markerRgb = hexToRgb(markerHex);
@@ -222,16 +226,14 @@ export default function OhuhuHarmonyPage() {
         const hueB = getHueFromHex(b.hex);
 
         if (hueA === hueB) {
+          // If hues are the same (e.g., within the same color family or both greyscale)
+          // sort by lightness (darker first)
           const rgbA = hexToRgb(a.hex);
           const rgbB = hexToRgb(b.hex);
-
           if (rgbA && rgbB) {
             const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
             const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
-            
-            // For chromatic colors with same hue, sort by lightness (darker first)
-            // Also for greyscale colors, as getHueFromHex already ensures primary sort.
-            return hslA.l - hslB.l; // Darker shades (lower L) first
+            return hslA.l - hslB.l; // Sorts darker (lower L) before lighter (higher L)
           }
           return 0;
         }
