@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ColorSwatch } from '@/components/core/color-swatch';
 import { cn } from '@/lib/utils';
-import { sortColors } from 'color-sorter';
+import { sort } from 'color-sorter';
 
 
 type ActivePageContentType = 'palette' | 'explorer' | 'sets';
@@ -209,7 +209,7 @@ export default function OhuhuHarmonyPage() {
     // Apply sort order
     if (sortOrder === 'hue') {
       const hexCodes = tempResults.map(marker => marker.hex).filter(hex => hex && hex.startsWith('#'));
-      const sortedHexCodes = sortColors(hexCodes);
+      const sortedHexCodes = sort(hexCodes);
       
       // Create a map for quick lookup of original marker objects by their hex
       const markerMap = new Map<string, Marker[]>();
@@ -556,3 +556,4 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
+
