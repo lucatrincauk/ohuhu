@@ -94,14 +94,16 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
 
 function getHueFromHex(hex: string): number {
   const rgb = hexToRgb(hex);
-  if (!rgb) return 461; // Sort invalid hex codes last
+  if (!rgb) return 461; // Sort invalid hex codes last (after greys)
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
   
   // Greyscale colors (low saturation)
-  // Assign them a high "hue" value to group them after chromatic colors.
-  // Sort them by lightness (dark to light).
+  // Assign them a "hue" value in a range after chromatic colors (0-359).
+  // This groups them together and allows sorting by lightness (dark to light).
   if (hsl.s < 0.1) { 
-    return 360 + hsl.l * 100; // black (l=0) -> hue 360, white (l=1) -> hue 460
+    // Map black (l=0) to 360, white (l=1) to 460.
+    // Ascending sort of these values will be dark to light.
+    return 360 + (hsl.l * 100); 
   }
   return hsl.h; // Return actual hue for chromatic colors
 }
@@ -192,7 +194,7 @@ export default function OhuhuHarmonyPage() {
     } else if (selectedSetId === '__missing__') {
       if (ownedSetIds.length === 0) {
         // If no sets are owned, all markers are "missing" from the owned collection.
-        // This is effectively showing all markers.
+        // This is effectively showing all markers unless another filter applies.
       } else {
         tempResults = tempResults.filter(marker => !marker.setIds.some(sid => ownedSetIds.includes(sid)));
       }
@@ -226,16 +228,21 @@ export default function OhuhuHarmonyPage() {
         const hueB = getHueFromHex(b.hex);
 
         if (hueA === hueB) {
-          // If hues are the same (e.g., within the same color family or both greyscale)
+          // If effective hues are the same (e.g., within the same color family or both greyscale at same primary sort level)
           // sort by lightness (darker first)
           const rgbA = hexToRgb(a.hex);
           const rgbB = hexToRgb(b.hex);
+          
           if (rgbA && rgbB) {
             const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
             const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
             return hslA.l - hslB.l; // Sorts darker (lower L) before lighter (higher L)
+          } else if (rgbA) {
+            return -1; // Valid A comes before invalid B
+          } else if (rgbB) {
+            return 1;  // Invalid A comes after valid B
           }
-          return 0;
+          return 0; // Both invalid, maintain order
         }
         return hueA - hueB; 
       });
@@ -550,6 +557,5 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
-
 
     
