@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ColorSwatch } from '@/components/core/color-swatch';
 import { cn } from '@/lib/utils';
+import { sortColors } from 'color-sorter';
 
 
 type ActivePageContentType = 'palette' | 'explorer' | 'sets';
@@ -45,9 +46,9 @@ type SortOrder = 'hue' | 'id' | 'name';
 type SetFilterValue = string | null | '__owned__' | '__missing__';
 
 
-// Helper functions for color conversion and hue extraction
+// Helper functions for color conversion
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  if (!hex) {
+  if (!hex) { // Add check for undefined or null hex
     return null;
   }
   let normalizedHex = hex.replace(/^#/, '');
@@ -90,22 +91,6 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
     h /= 6;
   }
   return { h: h * 360, s, l };
-}
-
-function getHueFromHex(hex: string): number {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return 461; // Sort invalid hex codes last (after greys)
-  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-  
-  // Greyscale colors (low saturation)
-  // Assign them a "hue" value in a range after chromatic colors (0-359).
-  // This groups them together and allows sorting by lightness (dark to light).
-  if (hsl.s < 0.1) { 
-    // Map black (l=0) to 360, white (l=1) to 460.
-    // Ascending sort of these values will be dark to light.
-    return 360 + (hsl.l * 100); 
-  }
-  return hsl.h; // Return actual hue for chromatic colors
 }
 
 
@@ -206,7 +191,7 @@ export default function OhuhuHarmonyPage() {
     // Apply color category filter
     if (selectedColorCategory) {
       tempResults = tempResults.filter(marker =>
-        isColorInCategory(marker.hex, selectedColorCategory.hex)
+        marker.hex && isColorInCategory(marker.hex, selectedColorCategory.hex)
       );
     }
 
@@ -223,29 +208,43 @@ export default function OhuhuHarmonyPage() {
 
     // Apply sort order
     if (sortOrder === 'hue') {
-      tempResults.sort((a, b) => {
-        const hueA = getHueFromHex(a.hex);
-        const hueB = getHueFromHex(b.hex);
-
-        if (hueA === hueB) {
-          // If effective hues are the same (e.g., within the same color family or both greyscale at same primary sort level)
-          // sort by lightness (darker first)
-          const rgbA = hexToRgb(a.hex);
-          const rgbB = hexToRgb(b.hex);
-          
-          if (rgbA && rgbB) {
-            const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
-            const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
-            return hslA.l - hslB.l; // Sorts darker (lower L) before lighter (higher L)
-          } else if (rgbA) {
-            return -1; // Valid A comes before invalid B
-          } else if (rgbB) {
-            return 1;  // Invalid A comes after valid B
-          }
-          return 0; // Both invalid, maintain order
+      const hexCodes = tempResults.map(marker => marker.hex).filter(hex => hex && hex.startsWith('#'));
+      const sortedHexCodes = sortColors(hexCodes);
+      
+      // Create a map for quick lookup of original marker objects by their hex
+      const markerMap = new Map<string, Marker[]>();
+      tempResults.forEach(marker => {
+        if (marker.hex) {
+          const existing = markerMap.get(marker.hex) || [];
+          existing.push(marker);
+          markerMap.set(marker.hex, existing);
         }
-        return hueA - hueB; 
       });
+      
+      // Reconstruct the sorted marker list
+      // This handles multiple markers having the same hex by preserving their original relative order for that hex.
+      const sortedMarkers: Marker[] = [];
+      const usedMarkers = new Set<Marker>();
+
+      sortedHexCodes.forEach(hex => {
+        const markersWithThisHex = markerMap.get(hex);
+        if (markersWithThisHex) {
+          markersWithThisHex.forEach(marker => {
+            if (!usedMarkers.has(marker)) {
+              sortedMarkers.push(marker);
+              usedMarkers.add(marker);
+            }
+          });
+        }
+      });
+      // Add back any markers that didn't have a valid hex or weren't sorted (e.g. '0' blender)
+      tempResults.forEach(marker => {
+        if (!usedMarkers.has(marker)) {
+          sortedMarkers.push(marker);
+        }
+      });
+      tempResults = sortedMarkers;
+
     } else if (sortOrder === 'id') {
       tempResults.sort((a, b) => a.id.localeCompare(b.id));
     } else if (sortOrder === 'name') {
@@ -557,5 +556,3 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
-
-    
