@@ -230,11 +230,8 @@ export default function OhuhuHarmonyPage() {
             const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
             
             // For chromatic colors with same hue, sort by lightness (darker first)
-            if (hslA.s >= 0.1 && hslB.s >= 0.1) { 
-              return hslB.l - hslA.l; // Darker shades first
-            }
-            // For greyscale colors, already handled by hue calculation giving darker first
-            return hslB.l - hslA.l; // Consistent darker first if hues were somehow identical for different greys
+            // Also for greyscale colors, as getHueFromHex already ensures primary sort.
+            return hslA.l - hslB.l; // Darker shades (lower L) first
           }
           return 0;
         }
