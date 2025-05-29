@@ -54,7 +54,7 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
     >
       <CardHeader className="p-0 relative">
         <div
-          className="h-20 w-full" // Increased height for swatch
+          className="h-20 w-full" 
           style={{ backgroundColor: marker.hex }}
           aria-label={`Color preview for ${marker.name}`}
         />
@@ -67,24 +67,24 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
           </div>
         )}
       </CardHeader>
-      {/* Ensure CardContent has enough min-height for approx 3 rows of text + padding */}
-      <CardContent className="flex-grow p-2 flex items-start justify-between min-h-18"> 
-        <div> {/* Container for Title and ID */}
-          <CardTitle className="mb-0.5 text-sm leading-tight">{marker.name}</CardTitle> 
+      <CardContent className="flex-grow p-2 flex flex-col justify-start min-h-18 space-y-1"> 
+        <CardTitle className="text-sm leading-tight">{marker.name}</CardTitle> 
+        <div className="flex items-center justify-between w-full mt-auto"> {/* mt-auto pushes this to bottom if space allows */}
           <p className="text-sm font-semibold text-foreground/90">{marker.id}</p>
+          {onToggleFavorite && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="favorite-button h-7 w-7 p-1 shrink-0" 
+              onClick={handleFavoriteToggle}
+              title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Heart className={cn("h-4 w-4", isFavorite ? "text-red-500 fill-current" : "text-muted-foreground")} />
+            </Button>
+          )}
         </div>
-        {onToggleFavorite && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="favorite-button h-7 w-7 p-1 shrink-0" 
-            onClick={handleFavoriteToggle}
-            title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-          >
-            <Heart className={cn("h-4 w-4", isFavorite ? "text-red-500 fill-current" : "text-muted-foreground")} />
-          </Button>
-        )}
       </CardContent>
     </Card>
   );
 }
+
