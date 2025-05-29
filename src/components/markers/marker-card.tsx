@@ -2,7 +2,7 @@
 import type { Marker, MarkerSet } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart } from 'lucide-react'; // Changed from Star
+import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MarkerCardProps {
@@ -47,14 +47,14 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
   return (
     <Card 
       className={cn(
-        "flex flex-col overflow-hidden transition-all hover:shadow-lg relative",
+        "flex flex-col overflow-hidden transition-all hover:shadow-lg",
         onCardClick && "cursor-pointer"
       )}
       onClick={handleCardClick}
     >
       <CardHeader className="p-0 relative">
         <div
-          className="h-12 w-full" 
+          className="h-20 w-full" 
           style={{ backgroundColor: marker.hex }}
           aria-label={`Color preview for ${marker.name}`}
         />
@@ -66,21 +66,23 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
             Not Owned
           </div>
         )}
-         {onToggleFavorite && (
+      </CardHeader>
+      <CardContent className="flex-grow p-2 space-y-0.5 flex items-center justify-between"> 
+        <div>
+          <CardTitle className="mb-0.5 text-sm leading-tight">{marker.name}</CardTitle> 
+          <p className="text-xs font-semibold text-foreground/90">{marker.id}</p>
+        </div>
+        {onToggleFavorite && (
           <Button
             variant="ghost"
             size="icon"
-            className="favorite-button absolute bottom-1 right-1 h-7 w-7 p-1 bg-background/30 hover:bg-background/70 rounded-full"
+            className="favorite-button h-7 w-7 p-1 shrink-0" // Removed absolute positioning, added shrink-0
             onClick={handleFavoriteToggle}
             title={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart className={cn("h-4 w-4", isFavorite ? "text-red-500 fill-current" : "text-muted-foreground")} />
           </Button>
         )}
-      </CardHeader>
-      <CardContent className="flex-grow p-2 space-y-0.5"> 
-        <CardTitle className="mb-0.5 text-sm leading-tight">{marker.name}</CardTitle> 
-        <p className="text-xs font-semibold text-foreground/90">{marker.id}</p>
       </CardContent>
     </Card>
   );
