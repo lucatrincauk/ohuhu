@@ -38,7 +38,7 @@ export default function MarkerDetailPage() {
     toggleFavoriteMarker,
     markerPalettes,
     addMarkerToPalette,
-    removeMarkerFromPalette, // Added
+    removeMarkerFromPalette,
     getPalettesForMarker,
   } = useMarkerData();
   const { toast } = useToast();
@@ -83,8 +83,11 @@ export default function MarkerDetailPage() {
     .filter(Boolean as unknown as (value: MarkerSet | undefined) => value is MarkerSet);
 
   const belongingMarkerPalettes = getPalettesForMarker(marker.id);
-  const availablePalettesToAdd = markerPalettes.filter(p => !belongingMarkerPalettes.find(bp => bp.id === p.id));
-
+  
+  // Determine if the marker is already in the currently selected palette (for disabling the "Add" button)
+  const isMarkerAlreadyInSelectedPalette = selectedPaletteId 
+    ? belongingMarkerPalettes.some(p => p.id === selectedPaletteId)
+    : false;
 
   const handleExploreClick = () => {
     router.push(`/?activePage=explorer&exploreMarkerId=${marker.id}`);
@@ -103,9 +106,13 @@ export default function MarkerDetailPage() {
       toast({ title: 'No Palette Selected', description: 'Please select a palette to add the marker to.', variant: 'destructive'});
       return;
     }
+    if (isMarkerAlreadyInSelectedPalette) {
+       toast({ title: 'Already in Palette', description: `${marker.name} is already in the selected palette.`, variant: 'default' });
+       return;
+    }
     addMarkerToPalette(selectedPaletteId, marker.id);
     toast({ title: 'Marker Added to Palette', description: `${marker.name} added to selected palette.` });
-    setSelectedPaletteId(''); 
+    // setSelectedPaletteId(''); // Keep selectedPaletteId to allow observing the disabled button state
   };
 
   const handleRemoveMarkerFromPalette = (paletteId: string, paletteName: string) => {
@@ -211,7 +218,7 @@ export default function MarkerDetailPage() {
                   )}
                 </div>
 
-                {availablePalettesToAdd.length > 0 && ( 
+                {markerPalettes.length > 0 && ( 
                   <div className="mt-4 pt-4 border-t">
                     <Label htmlFor="palette-select" className="text-sm font-semibold text-foreground mb-2 block">Add to Palette:</Label> 
                     <div className="flex items-center gap-2">
@@ -220,14 +227,18 @@ export default function MarkerDetailPage() {
                           <SelectValue placeholder="Select a palette" /> 
                         </SelectTrigger>
                         <SelectContent>
-                          {availablePalettesToAdd.map(palette => ( 
+                          {markerPalettes.map(palette => ( 
                             <SelectItem key={palette.id} value={palette.id}>
                               {palette.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button onClick={handleAddMarkerToPalette} title="Add to selected palette" disabled={!selectedPaletteId}> 
+                      <Button 
+                        onClick={handleAddMarkerToPalette} 
+                        title={isMarkerAlreadyInSelectedPalette ? `${marker.name} is already in this palette` : "Add to selected palette"} 
+                        disabled={!selectedPaletteId || isMarkerAlreadyInSelectedPalette}
+                      > 
                         <PlusCircle className="mr-2 h-4 w-4" /> Add
                       </Button>
                     </div>
@@ -254,4 +265,3 @@ export default function MarkerDetailPage() {
     </div>
   );
 }
-
