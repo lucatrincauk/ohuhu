@@ -6,9 +6,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Compass, Info, Heart, PlusCircle, SwatchBook } from 'lucide-react'; // Changed Users to SwatchBook
+import { ArrowLeft, Compass, Info, Heart, PlusCircle, SwatchBook, Library } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Marker, MarkerSet, MarkerPalette } from '@/lib/types'; // Changed MarkerGroup to MarkerPalette
+import type { Marker, MarkerSet, MarkerPalette } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
@@ -24,16 +24,16 @@ export default function MarkerDetailPage() {
     isInitialized, 
     favoriteMarkerIds, 
     toggleFavoriteMarker,
-    markerPalettes, // Renamed from markerGroups
-    addMarkerToPalette, // Renamed from addMarkerToGroup
-    getPalettesForMarker, // Renamed from getGroupsForMarker
+    markerPalettes,
+    addMarkerToPalette,
+    getPalettesForMarker,
   } = useMarkerData();
   const { toast } = useToast();
 
   const markerId = typeof params.id === 'string' ? params.id : '';
   const marker = getMarkerById(markerId);
 
-  const [selectedPaletteId, setSelectedPaletteId] = useState<string>(''); // Renamed from selectedGroupId
+  const [selectedPaletteId, setSelectedPaletteId] = useState<string>('');
 
   useEffect(() => {
     if (isInitialized && !marker) {
@@ -69,8 +69,8 @@ export default function MarkerDetailPage() {
     .map(id => markerSets.find(s => s.id === id))
     .filter(Boolean as unknown as (value: MarkerSet | undefined) => value is MarkerSet);
 
-  const belongingMarkerPalettes = getPalettesForMarker(marker.id); // Renamed
-  const availablePalettesToAdd = markerPalettes.filter(p => !belongingMarkerPalettes.find(bp => bp.id === p.id)); // Renamed
+  const belongingMarkerPalettes = getPalettesForMarker(marker.id);
+  const availablePalettesToAdd = markerPalettes.filter(p => !belongingMarkerPalettes.find(bp => bp.id === p.id));
 
 
   const handleExploreClick = () => {
@@ -81,13 +81,17 @@ export default function MarkerDetailPage() {
     router.push(`/?activePage=palette&filterSetId=${setId}`);
   };
 
-  const handleAddMarkerToPalette = () => { // Renamed
+  const handlePaletteBadgeClick = (paletteId: string) => {
+    router.push(`/?activePage=palette&filterPaletteId=${paletteId}`);
+  };
+
+  const handleAddMarkerToPalette = () => {
     if (!selectedPaletteId) {
-      toast({ title: 'No Palette Selected', description: 'Please select a palette to add the marker to.', variant: 'destructive'}); // Renamed
+      toast({ title: 'No Palette Selected', description: 'Please select a palette to add the marker to.', variant: 'destructive'});
       return;
     }
-    addMarkerToPalette(selectedPaletteId, marker.id); // Renamed
-    toast({ title: 'Marker Added to Palette', description: `${marker.name} added to selected palette.` }); // Renamed
+    addMarkerToPalette(selectedPaletteId, marker.id);
+    toast({ title: 'Marker Added to Palette', description: `${marker.name} added to selected palette.` });
     setSelectedPaletteId(''); 
   };
 
@@ -135,6 +139,7 @@ export default function MarkerDetailPage() {
                           onClick={() => handleSetBadgeClick(set.id)}
                           title={`View all markers in ${set.name} set`}
                         >
+                          <Library className="mr-1 h-3 w-3" />
                           {set.name}
                         </Badge>
                       ))}
@@ -149,7 +154,13 @@ export default function MarkerDetailPage() {
                   {belongingMarkerPalettes.length > 0 ? ( 
                     <div className="flex flex-wrap gap-2">
                       {belongingMarkerPalettes.map(palette => ( 
-                        <Badge key={palette.id} variant="outline">
+                        <Badge 
+                          key={palette.id} 
+                          variant="outline"
+                          className="cursor-pointer hover:bg-accent/20"
+                          onClick={() => handlePaletteBadgeClick(palette.id)}
+                          title={`View markers in "${palette.name}" palette`}
+                        >
                           <SwatchBook className="mr-1 h-3 w-3" /> 
                           {palette.name}
                         </Badge>
