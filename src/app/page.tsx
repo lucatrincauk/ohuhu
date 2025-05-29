@@ -22,7 +22,7 @@ import type { Marker, MarkerSet, MarkerPalette } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon, PlusCircle, SwatchBook } from 'lucide-react';
+import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon, PlusCircle, SwatchBook, Users, FilterX } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -302,7 +302,9 @@ function AppContent() {
       if (palette) {
         tempResults = tempResults.filter(marker => palette.markerIds.includes(marker.id));
       } else {
-        tempResults = [];
+        // If selectedPaletteId is no longer valid (e.g., palette deleted), reset the filter
+        setSelectedPaletteId(null); 
+        // tempResults will proceed with other filters or all markers
       }
     }
 
@@ -408,6 +410,15 @@ function AppContent() {
       localStorage.setItem(PALETTE_SORT_ORDER_KEY, sortOrder);
     }
   }, [sortOrder]);
+
+  const handleClearAllFilters = () => {
+    setSelectedSetId(null);
+    setSelectedColorCategory(null);
+    setSelectedPaletteId(null);
+    setSearchTerm('');
+    // Sort order can remain as is or be reset, user preference. Keeping it for now.
+    toast({ title: "Filters Cleared", description: "All palette filters have been reset." });
+  };
 
 
   const handleSetFilterChange = (setId: SetFilterValue) => {
@@ -576,7 +587,7 @@ function AppContent() {
     return () => {
       setActivePageContent(page);
       if (clearExplorer) setSelectedMarkerForExplorer(null);
-      setSearchTerm('');
+      // setSearchTerm(''); // Keep search term when switching main pages, unless filters are cleared
       if (isMobile) setOpenMobile(false);
     };
   };
@@ -789,7 +800,7 @@ function AppContent() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant={selectedPaletteId ? "secondary" : "outline"} size="sm" className="h-8 gap-1">
-                      <SwatchBook className="h-3.5 w-3.5" />
+                      <SwatchBook className="h-3.5 w-3.5" /> {/* Users icon changed to SwatchBook for palette consistency */}
                       <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                         {getPaletteFilterLabel()}
                       </span>
@@ -808,7 +819,7 @@ function AppContent() {
                     >
                       All Markers (No Palette Filter)
                     </DropdownMenuCheckboxItem>
-                    <DropdownMenuSeparator />
+                     {markerPalettes.length > 0 && <DropdownMenuSeparator />}
                     {markerPalettes.map((palette) => (
                       <DropdownMenuCheckboxItem
                         key={palette.id}
@@ -821,7 +832,7 @@ function AppContent() {
                         {palette.name}
                       </DropdownMenuCheckboxItem>
                     ))}
-                    { markerPalettes.length > 0 && <DropdownMenuSeparator /> }
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onSelect={() => {
                         setActivePageContent('palettes');
@@ -833,7 +844,6 @@ function AppContent() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -854,6 +864,16 @@ function AppContent() {
                     </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1"
+                  onClick={handleClearAllFilters}
+                  title="Clear all active filters"
+                >
+                  <FilterX className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Clear Filters</span>
+                </Button>
               </div>
               <div className="relative mt-2">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -889,3 +909,4 @@ export default function OhuhuHarmonyPage() {
   );
 }
 
+    

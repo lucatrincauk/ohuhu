@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { Marker, MarkerSet, MarkerPalette } from '@/lib/types'; // Changed MarkerGroup to MarkerPalette
+import type { Marker, MarkerSet, MarkerPalette } from '@/lib/types';
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { INITIAL_MARKERS, INITIAL_MARKER_SETS } from '@/lib/constants';
 
@@ -9,14 +9,14 @@ const MARKERS_STORAGE_KEY = 'ohuhuHarmony_markers';
 const SETS_STORAGE_KEY = 'ohuhuHarmony_markerSets';
 const OWNED_SETS_STORAGE_KEY = 'ohuhuHarmony_ownedSetIds';
 const FAVORITE_MARKERS_STORAGE_KEY = 'ohuhuHarmony_favoriteMarkerIds';
-const MARKER_PALETTES_STORAGE_KEY = 'ohuhuHarmony_markerPalettes'; // Renamed from MARKER_GROUPS_STORAGE_KEY
+const MARKER_PALETTES_STORAGE_KEY = 'ohuhuHarmony_markerPalettes';
 
 export interface MarkerDataContextType {
   markers: Marker[];
   markerSets: MarkerSet[];
   ownedSetIds: string[];
   favoriteMarkerIds: string[];
-  markerPalettes: MarkerPalette[]; // Renamed from markerGroups
+  markerPalettes: MarkerPalette[];
   isInitialized: boolean;
   addMarker: (newMarkerData: { id?: string; name: string; hex: string; setId: string }) => void;
   updateMarker: (markerId: string, updates: Partial<Omit<Marker, 'id' | 'setIds'>>) => void;
@@ -24,10 +24,12 @@ export interface MarkerDataContextType {
   addMarkerSet: (newSet: Omit<MarkerSet, 'id'> & { id?: string }) => void;
   updateOwnedSetIds: (newOwnedSetIds: string[]) => void;
   toggleFavoriteMarker: (markerId: string) => void;
-  createMarkerPalette: (name: string) => void; // Renamed from createMarkerGroup
-  addMarkerToPalette: (paletteId: string, markerId: string) => void; // Renamed from addMarkerToGroup
-  removeMarkerFromPalette: (paletteId: string, markerId: string) => void; // Renamed from removeMarkerFromGroup
-  getPalettesForMarker: (markerId: string) => MarkerPalette[]; // Renamed from getGroupsForMarker
+  createMarkerPalette: (name: string) => void;
+  addMarkerToPalette: (paletteId: string, markerId: string) => void;
+  removeMarkerFromPalette: (paletteId: string, markerId: string) => void;
+  getPalettesForMarker: (markerId: string) => MarkerPalette[];
+  updateMarkerPaletteName: (paletteId: string, newName: string) => void;
+  removeMarkerPalette: (paletteId: string) => void;
 }
 
 export const MarkerDataContext = createContext<MarkerDataContextType | undefined>(undefined);
@@ -37,7 +39,7 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
   const [markerSetsState, setMarkerSetsState] = useState<MarkerSet[]>([]);
   const [ownedSetIdsState, setOwnedSetIdsState] = useState<string[]>([]);
   const [favoriteMarkerIdsState, setFavoriteMarkerIdsState] = useState<string[]>([]);
-  const [markerPalettesState, setMarkerPalettesState] = useState<MarkerPalette[]>([]); // Renamed from markerGroupsState
+  const [markerPalettesState, setMarkerPalettesState] = useState<MarkerPalette[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -54,8 +56,8 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
       const storedFavoriteMarkerIds = localStorage.getItem(FAVORITE_MARKERS_STORAGE_KEY);
       setFavoriteMarkerIdsState(storedFavoriteMarkerIds ? JSON.parse(storedFavoriteMarkerIds) : []);
 
-      const storedMarkerPalettes = localStorage.getItem(MARKER_PALETTES_STORAGE_KEY); // Renamed
-      setMarkerPalettesState(storedMarkerPalettes ? JSON.parse(storedMarkerPalettes) : []); // Renamed
+      const storedMarkerPalettes = localStorage.getItem(MARKER_PALETTES_STORAGE_KEY);
+      setMarkerPalettesState(storedMarkerPalettes ? JSON.parse(storedMarkerPalettes) : []);
 
     } catch (error) {
       console.error("Failed to access localStorage or initialize data:", error);
@@ -63,7 +65,7 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
       setMarkerSetsState(INITIAL_MARKER_SETS);
       setOwnedSetIdsState([]);
       setFavoriteMarkerIdsState([]);
-      setMarkerPalettesState([]); // Renamed
+      setMarkerPalettesState([]);
     }
     setIsInitialized(true);
   }, []);
@@ -132,22 +134,22 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
     });
   }, [updateLocalStorage]);
 
-  const createMarkerPalette = useCallback((name: string) => { // Renamed from createMarkerGroup
-    const newPalette: MarkerPalette = { // Renamed from newGroup
-      id: `palette-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`, // Renamed from group-
+  const createMarkerPalette = useCallback((name: string) => {
+    const newPalette: MarkerPalette = {
+      id: `palette-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       name,
       markerIds: [],
     };
-    setMarkerPalettesState(prevPalettes => { // Renamed from prevGroups
-      const updatedPalettes = [...prevPalettes, newPalette]; // Renamed
-      updateLocalStorage(MARKER_PALETTES_STORAGE_KEY, updatedPalettes); // Renamed
+    setMarkerPalettesState(prevPalettes => {
+      const updatedPalettes = [...prevPalettes, newPalette];
+      updateLocalStorage(MARKER_PALETTES_STORAGE_KEY, updatedPalettes);
       return updatedPalettes;
     });
   }, [updateLocalStorage]);
 
-  const addMarkerToPalette = useCallback((paletteId: string, markerId: string) => { // Renamed from addMarkerToGroup
-    setMarkerPalettesState(prevPalettes => { // Renamed
-      const updatedPalettes = prevPalettes.map(palette => { // Renamed
+  const addMarkerToPalette = useCallback((paletteId: string, markerId: string) => {
+    setMarkerPalettesState(prevPalettes => {
+      const updatedPalettes = prevPalettes.map(palette => {
         if (palette.id === paletteId) {
           if (!palette.markerIds.includes(markerId)) {
             return { ...palette, markerIds: [...palette.markerIds, markerId] };
@@ -155,27 +157,45 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
         }
         return palette;
       });
-      updateLocalStorage(MARKER_PALETTES_STORAGE_KEY, updatedPalettes); // Renamed
+      updateLocalStorage(MARKER_PALETTES_STORAGE_KEY, updatedPalettes);
       return updatedPalettes;
     });
   }, [updateLocalStorage]);
 
-  const removeMarkerFromPalette = useCallback((paletteId: string, markerId: string) => { // Renamed from removeMarkerFromGroup
-    setMarkerPalettesState(prevPalettes => { // Renamed
-      const updatedPalettes = prevPalettes.map(palette => { // Renamed
+  const removeMarkerFromPalette = useCallback((paletteId: string, markerId: string) => {
+    setMarkerPalettesState(prevPalettes => {
+      const updatedPalettes = prevPalettes.map(palette => {
         if (palette.id === paletteId) {
           return { ...palette, markerIds: palette.markerIds.filter(id => id !== markerId) };
         }
         return palette;
       });
-      updateLocalStorage(MARKER_PALETTES_STORAGE_KEY, updatedPalettes); // Renamed
+      updateLocalStorage(MARKER_PALETTES_STORAGE_KEY, updatedPalettes);
       return updatedPalettes;
     });
   }, [updateLocalStorage]);
   
-  const getPalettesForMarker = useCallback((markerId: string): MarkerPalette[] => { // Renamed from getGroupsForMarker
-    return markerPalettesState.filter(palette => palette.markerIds.includes(markerId)); // Renamed
-  }, [markerPalettesState]); // Renamed
+  const getPalettesForMarker = useCallback((markerId: string): MarkerPalette[] => {
+    return markerPalettesState.filter(palette => palette.markerIds.includes(markerId));
+  }, [markerPalettesState]);
+
+  const updateMarkerPaletteName = useCallback((paletteId: string, newName: string) => {
+    setMarkerPalettesState(prevPalettes => {
+      const updatedPalettes = prevPalettes.map(palette =>
+        palette.id === paletteId ? { ...palette, name: newName } : palette
+      );
+      updateLocalStorage(MARKER_PALETTES_STORAGE_KEY, updatedPalettes);
+      return updatedPalettes;
+    });
+  }, [updateLocalStorage]);
+
+  const removeMarkerPalette = useCallback((paletteId: string) => {
+    setMarkerPalettesState(prevPalettes => {
+      const updatedPalettes = prevPalettes.filter(palette => palette.id !== paletteId);
+      updateLocalStorage(MARKER_PALETTES_STORAGE_KEY, updatedPalettes);
+      return updatedPalettes;
+    });
+  }, [updateLocalStorage]);
 
   return (
     <MarkerDataContext.Provider value={{
@@ -183,7 +203,7 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
       markerSets: markerSetsState,
       ownedSetIds: ownedSetIdsState,
       favoriteMarkerIds: favoriteMarkerIdsState,
-      markerPalettes: markerPalettesState, // Renamed
+      markerPalettes: markerPalettesState,
       isInitialized,
       addMarker,
       updateMarker,
@@ -191,12 +211,16 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
       addMarkerSet,
       updateOwnedSetIds,
       toggleFavoriteMarker,
-      createMarkerPalette, // Renamed
-      addMarkerToPalette, // Renamed
-      removeMarkerFromPalette, // Renamed
-      getPalettesForMarker, // Renamed
+      createMarkerPalette,
+      addMarkerToPalette,
+      removeMarkerFromPalette,
+      getPalettesForMarker,
+      updateMarkerPaletteName,
+      removeMarkerPalette,
     }}>
       {children}
     </MarkerDataContext.Provider>
   );
 };
+
+    
