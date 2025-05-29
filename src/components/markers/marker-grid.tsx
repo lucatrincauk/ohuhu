@@ -5,11 +5,11 @@ import { MarkerCard } from './marker-card';
 interface MarkerGridProps {
   markers: Marker[];
   markerSets: MarkerSet[];
-  onSelectMarkerForShades?: (marker: Marker) => void;
+  onMarkerCardClick?: (marker: Marker) => void;
   ownedSetIds?: string[];
 }
 
-export function MarkerGrid({ markers, markerSets, onSelectMarkerForShades, ownedSetIds }: MarkerGridProps) {
+export function MarkerGrid({ markers, markerSets, onMarkerCardClick, ownedSetIds }: MarkerGridProps) {
   if (!markers || markers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -26,10 +26,10 @@ export function MarkerGrid({ markers, markerSets, onSelectMarkerForShades, owned
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 p-2 md:p-3">
       {markers.map((marker) => (
         <MarkerCard
-          key={marker.id} // Key is now just marker.id as it will be unique in the markers array
+          key={marker.id}
           marker={marker}
           markerSets={markerSets}
-          onSelectForShades={onSelectMarkerForShades}
+          onCardClick={onMarkerCardClick}
           isOwned={marker.setIds.some(sid => currentOwnedSetIds.includes(sid))}
         />
       ))}
