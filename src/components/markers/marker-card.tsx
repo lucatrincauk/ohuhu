@@ -68,7 +68,7 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
         )}
       </CardHeader>
       {/* Ensure CardContent has enough min-height for approx 3 rows of text + padding */}
-      <CardContent className="flex-grow p-2 flex items-center justify-between min-h-18"> 
+      <CardContent className="flex-grow p-2 flex items-start justify-between min-h-18"> 
         <div> {/* Container for Title and ID */}
           <CardTitle className="mb-0.5 text-sm leading-tight">{marker.name}</CardTitle> 
           <p className="text-sm font-semibold text-foreground/90">{marker.id}</p>
