@@ -11,7 +11,7 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
-  useSidebar, // Import useSidebar
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { AppLogo } from '@/components/core/app-logo';
 import { MarkerGrid } from '@/components/markers/marker-grid';
@@ -45,6 +45,7 @@ import { sort } from 'color-sorter';
 
 const PALETTE_FILTER_SET_ID_KEY = 'ohuhuHarmony_paletteFilterSetId';
 const PALETTE_FILTER_COLOR_CATEGORY_KEY = 'ohuhuHarmony_paletteFilterColorCategory';
+const PALETTE_FILTER_GROUP_ID_KEY = 'ohuhuHarmony_paletteFilterGroupId'; // New key
 const PALETTE_SORT_ORDER_KEY = 'ohuhuHarmony_paletteSortOrder';
 
 
@@ -160,7 +161,7 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
 
 
 function AppContent() {
-  const { markers: allMarkers, markerSets, isInitialized, ownedSetIds, getMarkerById, favoriteMarkerIds, toggleFavoriteMarker } = useMarkerData();
+  const { markers: allMarkers, markerSets, isInitialized, ownedSetIds, getMarkerById, favoriteMarkerIds, toggleFavoriteMarker, markerGroups } = useMarkerData();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isMobile, setOpenMobile } = useSidebar(); 
@@ -190,6 +191,13 @@ function AppContent() {
     return null;
   });
 
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(PALETTE_FILTER_GROUP_ID_KEY) || null;
+    }
+    return null;
+  });
+
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(PALETTE_SORT_ORDER_KEY);
@@ -202,7 +210,6 @@ function AppContent() {
   const [activePageContent, setActivePageContent] = useState<ActivePageContentType>('palette');
   const [selectedMarkerForExplorer, setSelectedMarkerForExplorer] = useState<Marker | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  // const { toast } = useToast(); // Not used directly in AppContent, consider moving if needed for actions here
 
 
   useEffect(() => {
@@ -244,7 +251,7 @@ function AppContent() {
         router.replace(`${window.location.pathname}${query}`, { scroll: false });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, getMarkerById, router]); // activePageContent, selectedSetId, selectedMarkerForExplorer removed from deps to avoid loops
+  }, [searchParams, getMarkerById, router]);
 
 
   useEffect(() => {
@@ -271,6 +278,15 @@ function AppContent() {
       tempResults = tempResults.filter(marker => marker.setIds.includes(selectedSetId));
     }
     
+    // Apply group filter
+    if (selectedGroupId) {
+      const group = markerGroups.find(g => g.id === selectedGroupId);
+      if (group) {
+        tempResults = tempResults.filter(marker => group.markerIds.includes(marker.id));
+      } else {
+        tempResults = []; // Group not found, show no markers
+      }
+    }
 
     // Apply color category filter
     if (selectedColorCategory) {
@@ -308,7 +324,7 @@ function AppContent() {
           });
           
           const sortedMarkers: Marker[] = [];
-          const usedMarkers = new Set<string>(); // Use marker IDs to track usage
+          const usedMarkers = new Set<string>(); 
 
           sortedHexCodes.forEach(hex => {
             const markersWithThisHex = markerMap.get(hex);
@@ -322,7 +338,6 @@ function AppContent() {
             }
           });
           
-          // Add any remaining markers (e.g., those with invalid hex or not covered by sorter)
           tempResults.forEach(marker => {
             if (!usedMarkers.has(marker.id)) {
               sortedMarkers.push(marker); 
@@ -341,7 +356,7 @@ function AppContent() {
 
     setDisplayedMarkers(tempResults);
 
-  }, [searchTerm, selectedColorCategory, selectedSetId, allMarkers, isInitialized, activePageContent, sortOrder, ownedSetIds, favoriteMarkerIds]);
+  }, [searchTerm, selectedColorCategory, selectedSetId, selectedGroupId, allMarkers, isInitialized, activePageContent, sortOrder, ownedSetIds, favoriteMarkerIds, markerGroups]);
 
   // Save filters to localStorage
   useEffect(() => {
@@ -366,6 +381,16 @@ function AppContent() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      if (selectedGroupId === null) {
+        localStorage.removeItem(PALETTE_FILTER_GROUP_ID_KEY);
+      } else {
+        localStorage.setItem(PALETTE_FILTER_GROUP_ID_KEY, selectedGroupId);
+      }
+    }
+  }, [selectedGroupId]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
       localStorage.setItem(PALETTE_SORT_ORDER_KEY, sortOrder);
     }
   }, [sortOrder]);
@@ -373,6 +398,10 @@ function AppContent() {
 
   const handleSetFilterChange = (setId: SetFilterValue) => {
     setSelectedSetId(setId);
+  };
+
+  const handleGroupFilterChange = (groupId: string | null) => {
+    setSelectedGroupId(groupId);
   };
 
   const handleColorCategorySelect = (category: { name: string; hex: string } | null) => {
@@ -392,6 +421,7 @@ function AppContent() {
     setSelectedSetId(setId);
     setSelectedColorCategory(null); 
     setSearchTerm(''); 
+    setSelectedGroupId(null);
     if (isMobile) setOpenMobile(false);
   };
 
@@ -424,13 +454,26 @@ function AppContent() {
       title = set ? `${set.name} Markers` : "Selected Set Markers";
     }
 
+    if (selectedGroupId) {
+      const group = markerGroups.find(g => g.id === selectedGroupId);
+      if (group) {
+        if (title === "All Markers") {
+          title = `Markers in "${group.name}" Group`;
+        } else {
+          title += ` (in "${group.name}" Group)`;
+        }
+      }
+    }
+    
     if (selectedColorCategory) {
-      if (title === "All Markers") {
+      if (title === "All Markers" && !selectedGroupId) {
         title = `${selectedColorCategory.name} Markers`;
       } else {
         const parts = title.split(" Markers");
-        if (parts.length > 1 && parts[0].trim() !== "") {
+        if (parts.length > 1 && parts[0].trim() !== "" && !title.includes("Group")) {
            title = `${parts[0].trim()} ${selectedColorCategory.name} Markers`;
+        } else if (title.includes("Group")) {
+           title = title.replace(/ Group/, ` ${selectedColorCategory.name} Group`);
         } else {
            title = `${selectedColorCategory.name} Markers`;
         }
@@ -438,7 +481,7 @@ function AppContent() {
     }
 
     if (searchTerm.trim() !== '') {
-      if (title === "All Markers" && !selectedColorCategory && !(selectedSetId && selectedSetId !== '__favorites__' && selectedSetId !== '__owned__' && selectedSetId !== '__missing__')) {
+      if (title === "All Markers" && !selectedColorCategory && !selectedGroupId && !(selectedSetId && selectedSetId !== '__favorites__' && selectedSetId !== '__owned__' && selectedSetId !== '__missing__')) {
         title = `Search results for "${searchTerm.trim()}"`;
       } else { 
         title += ` (matching "${searchTerm.trim()}")`;
@@ -520,7 +563,7 @@ function AppContent() {
       setActivePageContent(page);
       if (clearExplorer) setSelectedMarkerForExplorer(null);
       setSearchTerm('');
-      if (isMobile) setOpenMobile(false);
+      if (isMobile && setOpenMobile) setOpenMobile(false);
     };
   };
 
@@ -562,6 +605,14 @@ function AppContent() {
       return `Set: ${set ? set.name : 'Unknown'}`;
     }
     return "Filter Set";
+  };
+
+  const getGroupFilterLabel = () => {
+    if (selectedGroupId) {
+      const group = markerGroups.find(g => g.id === selectedGroupId);
+      return `Group: ${group ? group.name : 'Unknown'}`;
+    }
+    return "Filter Group";
   };
 
 
@@ -719,6 +770,45 @@ function AppContent() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
+                  <Button variant={selectedGroupId ? "secondary" : "outline"} size="sm" className="h-8 gap-1" disabled={markerGroups.length === 0}>
+                    <Users className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                      {getGroupFilterLabel()}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Filter by marker group</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={selectedGroupId === null}
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      handleGroupFilterChange(null);
+                    }}
+                  >
+                    All Markers (No Group Filter)
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuSeparator />
+                  {markerGroups.map((group) => (
+                    <DropdownMenuCheckboxItem
+                      key={group.id}
+                      checked={selectedGroupId === group.id}
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        handleGroupFilterChange(selectedGroupId === group.id ? null : group.id);
+                      }}
+                    >
+                      {group.name}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8 gap-1">
                     <SortAsc className="h-3.5 w-3.5" />
                     <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -765,3 +855,4 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
+
