@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Library, Palette, Search } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge'; // Import Badge
+import { Badge } from '@/components/ui/badge';
 
 interface ManageSetsPageProps {
   onViewSetActive: (setId: string) => void;
@@ -127,7 +127,7 @@ export function ManageSetsPage({ onViewSetActive }: ManageSetsPageProps) {
                         size="sm"
                         className="h-8 px-3 shrink-0"
                         onClick={() => onViewSetActive(set.id)}
-                        title={`View all markers in ${set.name}`}
+                        title={`View all markers in ${set.name} set`}
                       >
                         View All
                       </Button>
