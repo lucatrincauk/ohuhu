@@ -74,7 +74,7 @@ export default function MarkerDetailPage() {
         
         <main className="p-4 md:p-6 grid gap-6">
           <Card>
-            <CardHeader className="flex flex-row items-start justify-between">
+            <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>{marker.name}</CardTitle>
                 <CardDescription>{marker.id}</CardDescription>
