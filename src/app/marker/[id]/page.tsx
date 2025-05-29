@@ -24,9 +24,9 @@ export default function MarkerDetailPage() {
     isInitialized, 
     favoriteMarkerIds, 
     toggleFavoriteMarker,
-    markerGroups, // Added
-    addMarkerToGroup, // Added
-    getGroupsForMarker, // Added
+    markerGroups,
+    addMarkerToGroup,
+    getGroupsForMarker,
   } = useMarkerData();
   const { toast } = useToast();
 
@@ -176,8 +176,8 @@ export default function MarkerDetailPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button onClick={handleAddMarkerToGroup} size="icon" title="Add to selected group" disabled={!selectedGroupId}>
-                        <PlusCircle className="h-5 w-5" />
+                      <Button onClick={handleAddMarkerToGroup} title="Add to selected group" disabled={!selectedGroupId}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add
                       </Button>
                     </div>
                   </div>
@@ -203,3 +203,4 @@ export default function MarkerDetailPage() {
     </div>
   );
 }
+
