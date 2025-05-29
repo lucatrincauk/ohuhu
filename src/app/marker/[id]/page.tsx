@@ -23,7 +23,7 @@ export default function MarkerDetailPage() {
   useEffect(() => {
     if (isInitialized && !marker) {
       // Optional: redirect if marker not found after initialization
-      // router.replace('/'); 
+      // router.replace('/');
     }
   }, [isInitialized, marker, router]);
 
@@ -74,9 +74,9 @@ export default function MarkerDetailPage() {
         
         <main className="p-4 md:p-6 grid gap-6">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-baseline justify-between"> {/* Changed to items-baseline */}
               <div>
-                <CardTitle>{marker.name}</CardTitle>
+                <CardTitle className="mb-1">{marker.name}</CardTitle> {/* Added mb-1 for gap */}
                 <CardDescription>{marker.id}</CardDescription>
               </div>
               <Button
@@ -114,3 +114,5 @@ export default function MarkerDetailPage() {
     </div>
   );
 }
+
+    
