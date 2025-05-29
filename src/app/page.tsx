@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -15,7 +16,6 @@ import { AppLogo } from '@/components/core/app-logo';
 import { MarkerGrid } from '@/components/markers/marker-grid';
 import { ColorExplorer } from '@/components/tools/color-explorer';
 import { ManageSetsPage } from '@/components/profile/manage-sets';
-import { MarkerDetailView } from '@/components/markers/marker-detail-view';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import type { Marker, MarkerSet } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
@@ -154,7 +154,10 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
 
 
 export default function OhuhuHarmonyPage() {
-  const { markers: allMarkers, markerSets, isInitialized, ownedSetIds } = useMarkerData();
+  const { markers: allMarkers, markerSets, isInitialized, ownedSetIds, getMarkerById } = useMarkerData();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<SetFilterValue>(null);
   const [selectedColorCategory, setSelectedColorCategory] = useState<{ name: string; hex: string } | null>(null);
@@ -165,8 +168,22 @@ export default function OhuhuHarmonyPage() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const { toast } = useToast();
 
-  const [selectedMarkerForDetail, setSelectedMarkerForDetail] = useState<Marker | null>(null);
-  const [isMarkerDetailOpen, setIsMarkerDetailOpen] = useState(false);
+
+  useEffect(() => {
+    const queryActivePage = searchParams.get('activePage');
+    const queryExploreMarkerId = searchParams.get('exploreMarkerId');
+
+    if (queryActivePage === 'explorer' && queryExploreMarkerId) {
+      const markerToExplore = getMarkerById(queryExploreMarkerId);
+      if (markerToExplore) {
+        setSelectedMarkerForExplorer(markerToExplore);
+        setActivePageContent('explorer');
+        // Clean up query params after use
+        router.replace('/', { scroll: false });
+      }
+    }
+  }, [searchParams, getMarkerById, router]);
+
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -239,12 +256,14 @@ export default function OhuhuHarmonyPage() {
             });
           }
         });
+        // Add any remaining markers (e.g., those with invalid hex or not processed by sorter)
         tempResults.forEach(marker => {
           if (!usedMarkers.has(marker)) {
             sortedMarkers.push(marker);
           }
         });
         tempResults = sortedMarkers;
+
       } catch (error) {
         console.error("Error sorting colors with color-sorter:", error);
         // Fallback or keep original order if sorter fails
@@ -276,7 +295,6 @@ export default function OhuhuHarmonyPage() {
     setSelectedMarkerForExplorer(marker);
     setActivePageContent('explorer');
     setSearchTerm('');
-    setIsMarkerDetailOpen(false); // Close detail view if open
   };
 
   const clearSelectedMarkerForExplorer = () => {
@@ -291,13 +309,7 @@ export default function OhuhuHarmonyPage() {
   };
 
   const handleOpenMarkerDetail = (marker: Marker) => {
-    setSelectedMarkerForDetail(marker);
-    setIsMarkerDetailOpen(true);
-  };
-
-  const handleCloseMarkerDetail = () => {
-    setIsMarkerDetailOpen(false);
-    setSelectedMarkerForDetail(null);
+    router.push(`/marker/${marker.id}`);
   };
 
 
@@ -567,15 +579,6 @@ export default function OhuhuHarmonyPage() {
           </main>
         </SidebarInset>
       </div>
-      {selectedMarkerForDetail && (
-        <MarkerDetailView
-          marker={selectedMarkerForDetail}
-          markerSets={markerSets}
-          isOpen={isMarkerDetailOpen}
-          onClose={handleCloseMarkerDetail}
-          onExplore={handleSelectMarkerForExplorer}
-        />
-      )}
     </SidebarProvider>
   );
 }
