@@ -73,7 +73,7 @@ export default function MarkerDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>{marker.name}</CardTitle>
-              <CardDescription>{marker.id} - {marker.hex.toUpperCase()}</CardDescription>
+              <CardDescription>{marker.id}</CardDescription>
             </CardHeader>
             <CardContent>
               <div>
