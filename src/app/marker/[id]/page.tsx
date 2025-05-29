@@ -6,9 +6,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Compass, Info, Heart, Users, PlusCircle } from 'lucide-react';
+import { ArrowLeft, Compass, Info, Heart, PlusCircle, SwatchBook } from 'lucide-react'; // Changed Users to SwatchBook
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Marker, MarkerSet, MarkerGroup } from '@/lib/types';
+import type { Marker, MarkerSet, MarkerPalette } from '@/lib/types'; // Changed MarkerGroup to MarkerPalette
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
@@ -24,16 +24,16 @@ export default function MarkerDetailPage() {
     isInitialized, 
     favoriteMarkerIds, 
     toggleFavoriteMarker,
-    markerGroups,
-    addMarkerToGroup,
-    getGroupsForMarker,
+    markerPalettes, // Renamed from markerGroups
+    addMarkerToPalette, // Renamed from addMarkerToGroup
+    getPalettesForMarker, // Renamed from getGroupsForMarker
   } = useMarkerData();
   const { toast } = useToast();
 
   const markerId = typeof params.id === 'string' ? params.id : '';
   const marker = getMarkerById(markerId);
 
-  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
+  const [selectedPaletteId, setSelectedPaletteId] = useState<string>(''); // Renamed from selectedGroupId
 
   useEffect(() => {
     if (isInitialized && !marker) {
@@ -69,8 +69,8 @@ export default function MarkerDetailPage() {
     .map(id => markerSets.find(s => s.id === id))
     .filter(Boolean as unknown as (value: MarkerSet | undefined) => value is MarkerSet);
 
-  const belongingMarkerGroups = getGroupsForMarker(marker.id);
-  const availableGroupsToAdd = markerGroups.filter(g => !belongingMarkerGroups.find(bg => bg.id === g.id));
+  const belongingMarkerPalettes = getPalettesForMarker(marker.id); // Renamed
+  const availablePalettesToAdd = markerPalettes.filter(p => !belongingMarkerPalettes.find(bp => bp.id === p.id)); // Renamed
 
 
   const handleExploreClick = () => {
@@ -81,14 +81,14 @@ export default function MarkerDetailPage() {
     router.push(`/?activePage=palette&filterSetId=${setId}`);
   };
 
-  const handleAddMarkerToGroup = () => {
-    if (!selectedGroupId) {
-      toast({ title: 'No Group Selected', description: 'Please select a group to add the marker to.', variant: 'destructive'});
+  const handleAddMarkerToPalette = () => { // Renamed
+    if (!selectedPaletteId) {
+      toast({ title: 'No Palette Selected', description: 'Please select a palette to add the marker to.', variant: 'destructive'}); // Renamed
       return;
     }
-    addMarkerToGroup(selectedGroupId, marker.id);
-    toast({ title: 'Marker Added to Group', description: `${marker.name} added to selected group.` });
-    setSelectedGroupId(''); // Reset selection
+    addMarkerToPalette(selectedPaletteId, marker.id); // Renamed
+    toast({ title: 'Marker Added to Palette', description: `${marker.name} added to selected palette.` }); // Renamed
+    setSelectedPaletteId(''); 
   };
 
   return (
@@ -145,38 +145,38 @@ export default function MarkerDetailPage() {
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2 mt-4">Belongs to Groups:</h4>
-                  {belongingMarkerGroups.length > 0 ? (
+                  <h4 className="text-sm font-semibold text-foreground mb-2 mt-4">Belongs to Palettes:</h4> 
+                  {belongingMarkerPalettes.length > 0 ? ( 
                     <div className="flex flex-wrap gap-2">
-                      {belongingMarkerGroups.map(group => (
-                        <Badge key={group.id} variant="outline">
-                          <Users className="mr-1 h-3 w-3" />
-                          {group.name}
+                      {belongingMarkerPalettes.map(palette => ( 
+                        <Badge key={palette.id} variant="outline">
+                          <SwatchBook className="mr-1 h-3 w-3" /> 
+                          {palette.name}
                         </Badge>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground italic">Not part of any custom groups.</p>
+                    <p className="text-sm text-muted-foreground italic">Not part of any custom palettes.</p> 
                   )}
                 </div>
 
-                {availableGroupsToAdd.length > 0 && (
+                {availablePalettesToAdd.length > 0 && ( 
                   <div className="mt-4 pt-4 border-t">
-                    <Label htmlFor="group-select" className="text-sm font-semibold text-foreground mb-2 block">Add to Group:</Label>
+                    <Label htmlFor="palette-select" className="text-sm font-semibold text-foreground mb-2 block">Add to Palette:</Label> 
                     <div className="flex items-center gap-2">
-                      <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                        <SelectTrigger id="group-select" className="flex-grow">
-                          <SelectValue placeholder="Select a group" />
+                      <Select value={selectedPaletteId} onValueChange={setSelectedPaletteId}> 
+                        <SelectTrigger id="palette-select" className="flex-grow"> 
+                          <SelectValue placeholder="Select a palette" /> 
                         </SelectTrigger>
                         <SelectContent>
-                          {availableGroupsToAdd.map(group => (
-                            <SelectItem key={group.id} value={group.id}>
-                              {group.name}
+                          {availablePalettesToAdd.map(palette => ( 
+                            <SelectItem key={palette.id} value={palette.id}>
+                              {palette.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button onClick={handleAddMarkerToGroup} title="Add to selected group" disabled={!selectedGroupId}>
+                      <Button onClick={handleAddMarkerToPalette} title="Add to selected palette" disabled={!selectedPaletteId}> 
                         <PlusCircle className="mr-2 h-4 w-4" /> Add
                       </Button>
                     </div>
@@ -203,4 +203,3 @@ export default function MarkerDetailPage() {
     </div>
   );
 }
-

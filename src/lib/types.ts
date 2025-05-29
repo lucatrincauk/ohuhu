@@ -17,8 +17,8 @@ export type MarkerInventoryItem = {
   hex: string;
 };
 
-export interface MarkerGroup {
+export interface MarkerPalette { // Renamed from MarkerGroup
   id: string;
   name: string;
-  markerIds: string[]; // IDs of the markers belonging to this group
+  markerIds: string[]; // IDs of the markers belonging to this palette
 }
