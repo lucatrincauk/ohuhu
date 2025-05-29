@@ -6,15 +6,16 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Compass, Info } from 'lucide-react';
+import { ArrowLeft, Compass, Info, Heart } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Marker, MarkerSet } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export default function MarkerDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { getMarkerById, markerSets, isInitialized } = useMarkerData();
+  const { getMarkerById, markerSets, isInitialized, favoriteMarkerIds, toggleFavoriteMarker } = useMarkerData();
 
   const markerId = typeof params.id === 'string' ? params.id : '';
   const marker = getMarkerById(markerId);
@@ -48,6 +49,8 @@ export default function MarkerDetailPage() {
     );
   }
 
+  const isFavorite = favoriteMarkerIds.includes(marker.id);
+
   const belongingSets = marker.setIds
     .map(id => markerSets.find(s => s.id === id))
     .filter(Boolean as unknown as (value: MarkerSet | undefined) => value is MarkerSet);
@@ -67,15 +70,26 @@ export default function MarkerDetailPage() {
       </header>
 
       <ScrollArea className="flex-1">
-        <div className="w-full h-64 md:h-80" style={{ backgroundColor: marker.hex }} aria-label={`Full color preview for ${marker.name}`} />
+        <div className="w-full h-48 md:h-80" style={{ backgroundColor: marker.hex }} aria-label={`Full color preview for ${marker.name}`} />
         
         <main className="p-4 md:p-6 grid gap-6">
           <Card>
-            <CardHeader>
-              <CardTitle>{marker.name}</CardTitle>
-              <CardDescription>{marker.id}</CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <CardTitle>{marker.name}</CardTitle>
+                <CardDescription>{marker.id}</CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => toggleFavoriteMarker(marker.id)}
+                title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                className="h-8 w-8 p-1 text-muted-foreground hover:text-red-500"
+              >
+                <Heart className={cn("h-5 w-5", isFavorite ? "text-red-500 fill-current" : "")} />
+              </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6 pt-0"> {/* Adjusted padding to match typical Card structure */}
               <div>
                 <h4 className="text-sm font-semibold text-foreground mb-2">Belongs to Sets:</h4>
                 {belongingSets.length > 0 ? (

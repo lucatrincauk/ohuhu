@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 interface MarkerCardProps {
   marker: Marker;
-  markerSets: MarkerSet[]; // Keep for consistency, though not directly used in this simplified version
+  markerSets: MarkerSet[];
   onCardClick?: (marker: Marker) => void;
   isOwned?: boolean;
   isFavorite?: boolean;
@@ -33,10 +33,16 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
     }
   };
 
+  const belongingSetNames = marker.setIds
+    .map(id => markerSets.find(s => s.id === id)?.name)
+    .filter(Boolean)
+    .join(', ');
+
   return (
     <Card 
       className={cn(
         "flex flex-col overflow-hidden transition-all hover:shadow-lg",
+        !isOwned && "", // Removed opacity-70 and border-dashed
         onCardClick && "cursor-pointer"
       )}
       onClick={handleCardClick}
@@ -59,7 +65,7 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
       <CardContent className="flex-grow p-2 flex flex-col justify-between min-h-18"> 
         <CardTitle className="text-sm leading-tight">{marker.name}</CardTitle> 
         <div className="flex items-center justify-between w-full">
-          <p className="text-sm font-semibold text-foreground/90">{marker.id}</p>
+          <p className="text-xs text-muted-foreground">{marker.id}</p> {/* Changed styling for marker ID */}
           {onToggleFavorite && (
             <Button
               variant="ghost"
