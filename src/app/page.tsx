@@ -41,6 +41,10 @@ import { ColorSwatch } from '@/components/core/color-swatch';
 import { cn } from '@/lib/utils';
 import { sort } from 'color-sorter';
 
+const PALETTE_FILTER_SET_ID_KEY = 'ohuhuHarmony_paletteFilterSetId';
+const PALETTE_FILTER_COLOR_CATEGORY_KEY = 'ohuhuHarmony_paletteFilterColorCategory';
+const PALETTE_SORT_ORDER_KEY = 'ohuhuHarmony_paletteSortOrder';
+
 
 type ActivePageContentType = 'palette' | 'explorer' | 'sets';
 type SortOrder = 'hue' | 'id' | 'name';
@@ -159,9 +163,39 @@ export default function OhuhuHarmonyPage() {
   const searchParams = useSearchParams();
 
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
-  const [selectedSetId, setSelectedSetId] = useState<SetFilterValue>(null);
-  const [selectedColorCategory, setSelectedColorCategory] = useState<{ name: string; hex: string } | null>(null);
-  const [sortOrder, setSortOrder] = useState<SortOrder>('hue');
+  
+  const [selectedSetId, setSelectedSetId] = useState<SetFilterValue>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(PALETTE_FILTER_SET_ID_KEY);
+      // Ensure __owned__, __missing__, __favorites__ are valid, or specific string IDs, or null
+      if (stored === null || stored === '__owned__' || stored === '__missing__' || stored === '__favorites__') {
+        return stored as SetFilterValue;
+      }
+      if (typeof stored === 'string' && stored.length > 0) return stored; // specific set ID
+    }
+    return null;
+  });
+
+  const [selectedColorCategory, setSelectedColorCategory] = useState<{ name: string; hex: string } | null>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(PALETTE_FILTER_COLOR_CATEGORY_KEY);
+      try {
+        return stored ? JSON.parse(stored) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(PALETTE_SORT_ORDER_KEY);
+      return stored ? (stored as SortOrder) : 'hue';
+    }
+    return 'hue';
+  });
+
 
   const [activePageContent, setActivePageContent] = useState<ActivePageContentType>('palette');
   const [selectedMarkerForExplorer, setSelectedMarkerForExplorer] = useState<Marker | null>(null);
@@ -303,6 +337,33 @@ export default function OhuhuHarmonyPage() {
     setDisplayedMarkers(tempResults);
 
   }, [searchTerm, selectedColorCategory, selectedSetId, allMarkers, isInitialized, activePageContent, sortOrder, ownedSetIds, favoriteMarkerIds]);
+
+  // Save filters to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (selectedSetId === null) {
+        localStorage.removeItem(PALETTE_FILTER_SET_ID_KEY);
+      } else {
+        localStorage.setItem(PALETTE_FILTER_SET_ID_KEY, selectedSetId);
+      }
+    }
+  }, [selectedSetId]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (selectedColorCategory === null) {
+        localStorage.removeItem(PALETTE_FILTER_COLOR_CATEGORY_KEY);
+      } else {
+        localStorage.setItem(PALETTE_FILTER_COLOR_CATEGORY_KEY, JSON.stringify(selectedColorCategory));
+      }
+    }
+  }, [selectedColorCategory]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(PALETTE_SORT_ORDER_KEY, sortOrder);
+    }
+  }, [sortOrder]);
 
 
   const handleSetFilterChange = (setId: SetFilterValue) => {
