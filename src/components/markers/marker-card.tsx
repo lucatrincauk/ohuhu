@@ -54,7 +54,7 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
     >
       <CardHeader className="p-0 relative">
         <div
-          className="h-20 w-full" 
+          className="h-20 w-full" // Increased height for swatch
           style={{ backgroundColor: marker.hex }}
           aria-label={`Color preview for ${marker.name}`}
         />
@@ -67,16 +67,17 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
           </div>
         )}
       </CardHeader>
-      <CardContent className="flex-grow p-2 space-y-0.5 flex items-center justify-between"> 
-        <div>
+      {/* Ensure CardContent has enough min-height for approx 3 rows of text + padding */}
+      <CardContent className="flex-grow p-2 flex items-center justify-between min-h-18"> 
+        <div> {/* Container for Title and ID */}
           <CardTitle className="mb-0.5 text-sm leading-tight">{marker.name}</CardTitle> 
-          <p className="text-xs font-semibold text-foreground/90">{marker.id}</p>
+          <p className="text-sm font-semibold text-foreground/90">{marker.id}</p>
         </div>
         {onToggleFavorite && (
           <Button
             variant="ghost"
             size="icon"
-            className="favorite-button h-7 w-7 p-1 shrink-0" // Removed absolute positioning, added shrink-0
+            className="favorite-button h-7 w-7 p-1 shrink-0" 
             onClick={handleFavoriteToggle}
             title={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
