@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Sidebar,
@@ -49,7 +49,7 @@ const PALETTE_FILTER_PALETTE_ID_KEY = 'ohuhuHarmony_paletteFilterPaletteId';
 const PALETTE_SORT_ORDER_KEY = 'ohuhuHarmony_paletteSortOrder';
 
 
-type ActivePageContentType = 'palette' | 'explorer' | 'sets' | 'palettes';
+type ActivePageContentType = 'palette' | 'explorer' | 'sets' | 'palettes'; // Changed from 'groups' to 'palettes'
 type SortOrder = 'hue' | 'id' | 'name';
 type SetFilterValue = string | null | '__owned__' | '__missing__' | '__favorites__';
 
@@ -237,13 +237,13 @@ function AppContent() {
     } else if ((queryActivePage === 'palette' || !queryActivePage) && queryFilterSetId) {
         newSelectedSetId = queryFilterSetId;
         newActivePage = 'palette';
-        newSelectedPaletteId = null;
+        newSelectedPaletteId = null; // Reset other filters
         newSelectedColorCategory = null;
         newSearchTerm = '';
     } else if ((queryActivePage === 'palette' || !queryActivePage) && queryFilterPaletteId) {
         newSelectedPaletteId = queryFilterPaletteId;
         newActivePage = 'palette';
-        newSelectedSetId = null;
+        newSelectedSetId = null; // Reset other filters
         newSelectedColorCategory = null;
         newSearchTerm = '';
     }
@@ -253,8 +253,7 @@ function AppContent() {
     if (newSelectedSetId !== selectedSetId) setSelectedSetId(newSelectedSetId);
     if (newSelectedPaletteId !== selectedPaletteId) setSelectedPaletteId(newSelectedPaletteId);
     if (newSelectedMarkerForExplorer !== selectedMarkerForExplorer) setSelectedMarkerForExplorer(newSelectedMarkerForExplorer);
-    if (newSelectedColorCategory !== selectedColorCategory && queryFilterSetId) setSelectedColorCategory(newSelectedColorCategory);
-    if (newSelectedColorCategory !== selectedColorCategory && queryFilterPaletteId) setSelectedColorCategory(newSelectedColorCategory);
+    if (newSelectedColorCategory !== selectedColorCategory && (queryFilterSetId || queryFilterPaletteId)) setSelectedColorCategory(newSelectedColorCategory);
     if (newSearchTerm !== searchTerm && (queryFilterSetId || queryFilterPaletteId)) setSearchTerm(newSearchTerm);
 
 
@@ -265,82 +264,85 @@ function AppContent() {
         current.delete('exploreMarkerId');
         current.delete('filterSetId');
         current.delete('filterPaletteId');
-        const search = current.toString();
-        const query = search ? `?${search}` : "";
+        const searchString = current.toString();
+        const query = searchString ? `?${searchString}` : "";
         router.replace(`${window.location.pathname}${query}`, { scroll: false });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, getMarkerById, router]);
 
-
+  // Effect to reset selectedPaletteId if the palette gets deleted
   useEffect(() => {
-    if (!isInitialized) return;
+    if (selectedPaletteId && markerPalettes && !markerPalettes.find(p => p.id === selectedPaletteId)) {
+      setSelectedPaletteId(null);
+    }
+  }, [selectedPaletteId, markerPalettes]);
 
-    let tempResults = [...allMarkers];
 
+  const markersFilteredBySet = useMemo(() => {
+    if (!isInitialized) return [];
+    let results = [...allMarkers];
     if (selectedSetId === '__owned__') {
-      if (ownedSetIds.length === 0) {
-        tempResults = [];
-      } else {
-        tempResults = tempResults.filter(marker => marker.setIds.some(sid => ownedSetIds.includes(sid)));
-      }
+      if (ownedSetIds.length === 0) return [];
+      results = results.filter(marker => marker.setIds.some(sid => ownedSetIds.includes(sid)));
     } else if (selectedSetId === '__missing__') {
-      if (ownedSetIds.length === 0) {
-        // If no sets are owned, all markers are technically "missing" if compared against an empty owned list.
-        // The behavior is to show all markers in this case.
-      } else {
-        tempResults = tempResults.filter(marker => !marker.setIds.some(sid => ownedSetIds.includes(sid)));
+      if (ownedSetIds.length === 0) { /* show all if no sets are owned */ }
+      else {
+        results = results.filter(marker => !marker.setIds.some(sid => ownedSetIds.includes(sid)));
       }
     } else if (selectedSetId === '__favorites__') {
-        tempResults = tempResults.filter(marker => favoriteMarkerIds.includes(marker.id));
+      results = results.filter(marker => favoriteMarkerIds.includes(marker.id));
     } else if (selectedSetId) {
-      tempResults = tempResults.filter(marker => marker.setIds.includes(selectedSetId));
+      results = results.filter(marker => marker.setIds.includes(selectedSetId));
     }
+    return results;
+  }, [isInitialized, allMarkers, selectedSetId, ownedSetIds, favoriteMarkerIds]);
 
-    if (selectedPaletteId) {
-      const palette = markerPalettes.find(p => p.id === selectedPaletteId);
-      if (palette) {
-        tempResults = tempResults.filter(marker => palette.markerIds.includes(marker.id));
-      } else {
-        // If selectedPaletteId is no longer valid (e.g., palette deleted), reset the filter
-        setSelectedPaletteId(null); 
-        // tempResults will proceed with other filters or all markers
-      }
+  const markersFilteredBySetAndPalette = useMemo(() => {
+    if (!selectedPaletteId) return markersFilteredBySet;
+    const palette = markerPalettes.find(p => p.id === selectedPaletteId);
+    if (palette) {
+      return markersFilteredBySet.filter(marker => palette.markerIds.includes(marker.id));
     }
+    // If selectedPaletteId is set but not found (e.g., palette deleted and useEffect hasn't cleared it yet), return empty
+    return [];
+  }, [markersFilteredBySet, selectedPaletteId, markerPalettes]);
 
-    if (selectedColorCategory) {
-      tempResults = tempResults.filter(marker =>
-        marker.hex && isColorInCategory(marker.hex, selectedColorCategory.hex)
-      );
-    }
+  const markersFilteredBySetPaletteAndColor = useMemo(() => {
+    if (!selectedColorCategory) return markersFilteredBySetAndPalette;
+    return markersFilteredBySetAndPalette.filter(marker =>
+      marker.hex && isColorInCategory(marker.hex, selectedColorCategory.hex)
+    );
+  }, [markersFilteredBySetAndPalette, selectedColorCategory]);
 
-    if (searchTerm.trim() !== '' && activePageContent === 'palette') {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      tempResults = tempResults.filter(
-        (marker) =>
-          marker.name.toLowerCase().includes(lowerSearchTerm) ||
-          marker.id.toLowerCase().includes(lowerSearchTerm) ||
-          (marker.hex && marker.hex.toLowerCase().includes(lowerSearchTerm))
-      );
-    }
+  const searchedMarkers = useMemo(() => {
+    if (searchTerm.trim() === '' || activePageContent !== 'palette') return markersFilteredBySetPaletteAndColor;
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return markersFilteredBySetPaletteAndColor.filter(
+      (marker) =>
+        marker.name.toLowerCase().includes(lowerSearchTerm) ||
+        marker.id.toLowerCase().includes(lowerSearchTerm) ||
+        (marker.hex && marker.hex.toLowerCase().includes(lowerSearchTerm))
+    );
+  }, [markersFilteredBySetPaletteAndColor, searchTerm, activePageContent]);
 
+  const finalDisplayedMarkers = useMemo(() => {
+    let results = [...searchedMarkers]; // Make a copy for sorting
     if (sortOrder === 'hue') {
-      const hexCodesWithNulls = tempResults.map(marker => marker.hex);
+      const hexCodesWithNulls = results.map(marker => marker.hex);
       const validHexCodes = hexCodesWithNulls.filter(hex => hex && hex.startsWith('#')) as string[];
 
       try {
           const sortedHexCodes = sort(validHexCodes);
-
           const markerMap = new Map<string, Marker[]>();
-          tempResults.forEach(marker => {
+          results.forEach(marker => {
             if (marker.hex) {
               const existing = markerMap.get(marker.hex) || [];
               existing.push(marker);
               markerMap.set(marker.hex, existing);
             }
           });
-
-          const sortedMarkers: Marker[] = [];
+          const sortedMarkersFromMap: Marker[] = [];
           const usedMarkers = new Set<string>();
 
           sortedHexCodes.forEach(hex => {
@@ -348,32 +350,38 @@ function AppContent() {
             if (markersWithThisHex) {
               markersWithThisHex.forEach(marker => {
                 if (!usedMarkers.has(marker.id)) {
-                  sortedMarkers.push(marker);
+                  sortedMarkersFromMap.push(marker);
                   usedMarkers.add(marker.id);
                 }
               });
             }
           });
-
-          tempResults.forEach(marker => {
+          results.forEach(marker => {
             if (!usedMarkers.has(marker.id)) {
-              sortedMarkers.push(marker);
+              sortedMarkersFromMap.push(marker);
             }
           });
-          tempResults = sortedMarkers;
-
+          return sortedMarkersFromMap;
       } catch (error) {
         console.error("Error sorting colors with color-sorter:", error);
+        return results; // fallback to unsorted on error
       }
     } else if (sortOrder === 'id') {
-      tempResults.sort((a, b) => a.id.localeCompare(b.id));
+      results.sort((a, b) => a.id.localeCompare(b.id));
     } else if (sortOrder === 'name') {
-      tempResults.sort((a, b) => a.name.localeCompare(b.name));
+      results.sort((a, b) => a.name.localeCompare(b.name));
     }
+    return results;
+  }, [searchedMarkers, sortOrder]);
 
-    setDisplayedMarkers(tempResults);
+  useEffect(() => {
+    if (isInitialized) {
+        setDisplayedMarkers(finalDisplayedMarkers);
+    } else {
+        setDisplayedMarkers([]);
+    }
+  }, [finalDisplayedMarkers, isInitialized]);
 
-  }, [searchTerm, selectedColorCategory, selectedSetId, selectedPaletteId, allMarkers, isInitialized, activePageContent, sortOrder, ownedSetIds, favoriteMarkerIds, markerPalettes]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -416,7 +424,6 @@ function AppContent() {
     setSelectedColorCategory(null);
     setSelectedPaletteId(null);
     setSearchTerm('');
-    // Sort order can remain as is or be reset, user preference. Keeping it for now.
     toast({ title: "Filters Cleared", description: "All palette filters have been reset." });
   };
 
@@ -482,28 +489,32 @@ function AppContent() {
     if (selectedPaletteId) {
       const palette = markerPalettes.find(p => p.id === selectedPaletteId);
       if (palette) {
-        if (title === "All Markers") {
+        if (title === "All Markers") { // If no set filter applied
           title = `Markers in "${palette.name}" Palette`;
-        } else {
-          title += ` (in "${palette.name}" Palette)`;
+        } else { // If a set filter is already applied
+           title += ` (in "${palette.name}" Palette)`;
         }
       }
     }
 
     if (selectedColorCategory) {
-      if (title === "All Markers" && !selectedPaletteId) {
+      if (title === "All Markers" && !selectedPaletteId) { // No set or palette filter
         title = `${selectedColorCategory.name} Markers`;
       } else {
-        const parts = title.split(" Markers");
-        if (parts.length > 1 && parts[0].trim() !== "" && !title.includes("Palette")) {
-           title = `${parts[0].trim()} ${selectedColorCategory.name} Markers`;
-        } else if (title.includes("Palette")) {
-           title = title.replace(/ Palette/, ` ${selectedColorCategory.name} Palette`);
-        } else {
-           title = `${selectedColorCategory.name} Markers`;
+        // Attempt to insert color name before "Markers" or "Palette"
+        const markersIndex = title.lastIndexOf(" Markers");
+        const paletteIndex = title.lastIndexOf(" Palette");
+
+        if (markersIndex !== -1 && (paletteIndex === -1 || markersIndex > paletteIndex)) {
+          title = title.substring(0, markersIndex) + ` ${selectedColorCategory.name} Markers` + title.substring(markersIndex + " Markers".length);
+        } else if (paletteIndex !== -1) {
+          title = title.substring(0, paletteIndex) + ` ${selectedColorCategory.name} Palette` + title.substring(paletteIndex + " Palette".length);
+        } else { // Fallback if " Markers" or " Palette" not found, append
+          title += ` (${selectedColorCategory.name})`;
         }
       }
     }
+    
 
     if (searchTerm.trim() !== '') {
       if (title === "All Markers" && !selectedColorCategory && !selectedPaletteId && !(selectedSetId && selectedSetId !== '__favorites__' && selectedSetId !== '__owned__' && selectedSetId !== '__missing__')) {
@@ -587,7 +598,6 @@ function AppContent() {
     return () => {
       setActivePageContent(page);
       if (clearExplorer) setSelectedMarkerForExplorer(null);
-      // setSearchTerm(''); // Keep search term when switching main pages, unless filters are cleared
       if (isMobile) setOpenMobile(false);
     };
   };
@@ -603,7 +613,7 @@ function AppContent() {
     if (activePageContent === 'palette') return "My Markers";
     if (activePageContent === 'sets') return "My Sets";
     if (activePageContent === 'explorer') return "Color Explorer";
-    if (activePageContent === 'palettes') return "My Marker Palettes";
+    if (activePageContent === 'palettes') return "My Palettes"; // Changed from 'groups'
     const activeButton = sidebarButtons.find(btn => btn.id === activePageContent);
     return activeButton ? activeButton.name : "Ohuhu Harmony";
   };
@@ -800,7 +810,7 @@ function AppContent() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant={selectedPaletteId ? "secondary" : "outline"} size="sm" className="h-8 gap-1">
-                      <SwatchBook className="h-3.5 w-3.5" /> {/* Users icon changed to SwatchBook for palette consistency */}
+                      <SwatchBook className="h-3.5 w-3.5" />
                       <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                         {getPaletteFilterLabel()}
                       </span>
@@ -908,5 +918,7 @@ export default function OhuhuHarmonyPage() {
     </Suspense>
   );
 }
+
+    
 
     
