@@ -16,12 +16,13 @@ import { AppLogo } from '@/components/core/app-logo';
 import { MarkerGrid } from '@/components/markers/marker-grid';
 import { ColorExplorer } from '@/components/tools/color-explorer';
 import { ManageSetsPage } from '@/components/profile/manage-sets';
+import { ManageGroupsPage } from '@/components/groups/manage-groups'; // New Import
 import { useMarkerData } from '@/hooks/use-marker-data';
 import type { Marker, MarkerSet } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon } from 'lucide-react';
+import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon, Users } from 'lucide-react'; // Added Users for groups
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -46,7 +47,7 @@ const PALETTE_FILTER_COLOR_CATEGORY_KEY = 'ohuhuHarmony_paletteFilterColorCatego
 const PALETTE_SORT_ORDER_KEY = 'ohuhuHarmony_paletteSortOrder';
 
 
-type ActivePageContentType = 'palette' | 'explorer' | 'sets';
+type ActivePageContentType = 'palette' | 'explorer' | 'sets' | 'groups'; // Added 'groups'
 type SortOrder = 'hue' | 'id' | 'name';
 type SetFilterValue = string | null | '__owned__' | '__missing__' | '__favorites__';
 
@@ -473,6 +474,8 @@ export default function OhuhuHarmonyPage() {
                </div>;
       case 'sets':
         return <ManageSetsPage onViewSetActive={handleNavigateToPaletteWithSetFilter} />;
+      case 'groups': // New case for groups
+        return <ManageGroupsPage />;
       default:
         return (
            <>
@@ -509,12 +512,14 @@ export default function OhuhuHarmonyPage() {
     { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: () => { setActivePageContent('palette'); setSelectedMarkerForExplorer(null); setSearchTerm(''); }},
     { id: 'explorer', name: "Color Explorer", Icon: Compass, type: 'main', action: () => { setActivePageContent('explorer'); setSearchTerm(''); }},
     { id: 'sets', name: "My Sets", Icon: Library, type: 'main', action: () => { setActivePageContent('sets'); setSelectedMarkerForExplorer(null); setSearchTerm(''); }},
+    { id: 'groups', name: "My Groups", Icon: Users, type: 'main', action: () => { setActivePageContent('groups'); setSelectedMarkerForExplorer(null); setSearchTerm(''); }}, // New "My Groups" button
   ];
 
   const getHeaderTitle = () => {
     if (activePageContent === 'palette') return "My Marker Palette";
     if (activePageContent === 'sets') return "My Sets";
     if (activePageContent === 'explorer') return "Color Explorer";
+    if (activePageContent === 'groups') return "My Marker Groups"; // New title for groups page
     const activeButton = sidebarButtons.find(btn => btn.id === activePageContent);
     return activeButton ? activeButton.name : "Ohuhu Harmony";
   };

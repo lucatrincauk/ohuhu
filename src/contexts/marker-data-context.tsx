@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { Marker, MarkerSet } from '@/lib/types';
+import type { Marker, MarkerSet, MarkerGroup } from '@/lib/types';
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { INITIAL_MARKERS, INITIAL_MARKER_SETS } from '@/lib/constants';
 
@@ -9,12 +9,14 @@ const MARKERS_STORAGE_KEY = 'ohuhuHarmony_markers';
 const SETS_STORAGE_KEY = 'ohuhuHarmony_markerSets';
 const OWNED_SETS_STORAGE_KEY = 'ohuhuHarmony_ownedSetIds';
 const FAVORITE_MARKERS_STORAGE_KEY = 'ohuhuHarmony_favoriteMarkerIds';
+const MARKER_GROUPS_STORAGE_KEY = 'ohuhuHarmony_markerGroups';
 
 export interface MarkerDataContextType {
   markers: Marker[];
   markerSets: MarkerSet[];
   ownedSetIds: string[];
   favoriteMarkerIds: string[];
+  markerGroups: MarkerGroup[];
   isInitialized: boolean;
   addMarker: (newMarkerData: { id?: string; name: string; hex: string; setId: string }) => void;
   updateMarker: (markerId: string, updates: Partial<Omit<Marker, 'id' | 'setIds'>>) => void;
@@ -22,6 +24,10 @@ export interface MarkerDataContextType {
   addMarkerSet: (newSet: Omit<MarkerSet, 'id'> & { id?: string }) => void;
   updateOwnedSetIds: (newOwnedSetIds: string[]) => void;
   toggleFavoriteMarker: (markerId: string) => void;
+  createMarkerGroup: (name: string) => void;
+  addMarkerToGroup: (groupId: string, markerId: string) => void;
+  removeMarkerFromGroup: (groupId: string, markerId: string) => void;
+  getGroupsForMarker: (markerId: string) => MarkerGroup[];
 }
 
 export const MarkerDataContext = createContext<MarkerDataContextType | undefined>(undefined);
@@ -31,6 +37,7 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
   const [markerSetsState, setMarkerSetsState] = useState<MarkerSet[]>([]);
   const [ownedSetIdsState, setOwnedSetIdsState] = useState<string[]>([]);
   const [favoriteMarkerIdsState, setFavoriteMarkerIdsState] = useState<string[]>([]);
+  const [markerGroupsState, setMarkerGroupsState] = useState<MarkerGroup[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -42,27 +49,22 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
       localStorage.setItem(SETS_STORAGE_KEY, JSON.stringify(INITIAL_MARKER_SETS));
 
       const storedOwnedSetIds = localStorage.getItem(OWNED_SETS_STORAGE_KEY);
-      if (storedOwnedSetIds) {
-        setOwnedSetIdsState(JSON.parse(storedOwnedSetIds));
-      } else {
-        setOwnedSetIdsState([]);
-        localStorage.setItem(OWNED_SETS_STORAGE_KEY, JSON.stringify([]));
-      }
+      setOwnedSetIdsState(storedOwnedSetIds ? JSON.parse(storedOwnedSetIds) : []);
 
       const storedFavoriteMarkerIds = localStorage.getItem(FAVORITE_MARKERS_STORAGE_KEY);
-      if (storedFavoriteMarkerIds) {
-        setFavoriteMarkerIdsState(JSON.parse(storedFavoriteMarkerIds));
-      } else {
-        setFavoriteMarkerIdsState([]);
-        localStorage.setItem(FAVORITE_MARKERS_STORAGE_KEY, JSON.stringify([]));
-      }
+      setFavoriteMarkerIdsState(storedFavoriteMarkerIds ? JSON.parse(storedFavoriteMarkerIds) : []);
+
+      const storedMarkerGroups = localStorage.getItem(MARKER_GROUPS_STORAGE_KEY);
+      setMarkerGroupsState(storedMarkerGroups ? JSON.parse(storedMarkerGroups) : []);
 
     } catch (error) {
       console.error("Failed to access localStorage or initialize data:", error);
+      // Fallback to defaults if localStorage fails
       setMarkersState(INITIAL_MARKERS);
       setMarkerSetsState(INITIAL_MARKER_SETS);
       setOwnedSetIdsState([]);
       setFavoriteMarkerIdsState([]);
+      setMarkerGroupsState([]);
     }
     setIsInitialized(true);
   }, []);
@@ -131,12 +133,58 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
     });
   }, [updateLocalStorage]);
 
+  const createMarkerGroup = useCallback((name: string) => {
+    const newGroup: MarkerGroup = {
+      id: `group-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      name,
+      markerIds: [],
+    };
+    setMarkerGroupsState(prevGroups => {
+      const updatedGroups = [...prevGroups, newGroup];
+      updateLocalStorage(MARKER_GROUPS_STORAGE_KEY, updatedGroups);
+      return updatedGroups;
+    });
+  }, [updateLocalStorage]);
+
+  const addMarkerToGroup = useCallback((groupId: string, markerId: string) => {
+    setMarkerGroupsState(prevGroups => {
+      const updatedGroups = prevGroups.map(group => {
+        if (group.id === groupId) {
+          if (!group.markerIds.includes(markerId)) {
+            return { ...group, markerIds: [...group.markerIds, markerId] };
+          }
+        }
+        return group;
+      });
+      updateLocalStorage(MARKER_GROUPS_STORAGE_KEY, updatedGroups);
+      return updatedGroups;
+    });
+  }, [updateLocalStorage]);
+
+  const removeMarkerFromGroup = useCallback((groupId: string, markerId: string) => {
+    setMarkerGroupsState(prevGroups => {
+      const updatedGroups = prevGroups.map(group => {
+        if (group.id === groupId) {
+          return { ...group, markerIds: group.markerIds.filter(id => id !== markerId) };
+        }
+        return group;
+      });
+      updateLocalStorage(MARKER_GROUPS_STORAGE_KEY, updatedGroups);
+      return updatedGroups;
+    });
+  }, [updateLocalStorage]);
+  
+  const getGroupsForMarker = useCallback((markerId: string): MarkerGroup[] => {
+    return markerGroupsState.filter(group => group.markerIds.includes(markerId));
+  }, [markerGroupsState]);
+
   return (
     <MarkerDataContext.Provider value={{
       markers: markersState,
       markerSets: markerSetsState,
       ownedSetIds: ownedSetIdsState,
       favoriteMarkerIds: favoriteMarkerIdsState,
+      markerGroups: markerGroupsState,
       isInitialized,
       addMarker,
       updateMarker,
@@ -144,6 +192,10 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
       addMarkerSet,
       updateOwnedSetIds,
       toggleFavoriteMarker,
+      createMarkerGroup,
+      addMarkerToGroup,
+      removeMarkerFromGroup,
+      getGroupsForMarker,
     }}>
       {children}
     </MarkerDataContext.Provider>

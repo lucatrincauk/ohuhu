@@ -1,3 +1,4 @@
+
 export interface Marker {
   id: string; // User-defined ID, e.g., "R12" or a unique number like "101"
   name: string;
@@ -15,3 +16,9 @@ export type MarkerInventoryItem = {
   name: string;
   hex: string;
 };
+
+export interface MarkerGroup {
+  id: string;
+  name: string;
+  markerIds: string[]; // IDs of the markers belonging to this group
+}

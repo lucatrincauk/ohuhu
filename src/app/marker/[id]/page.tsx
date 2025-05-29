@@ -1,29 +1,43 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Compass, Info, Heart } from 'lucide-react';
+import { ArrowLeft, Compass, Info, Heart, Users, PlusCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Marker, MarkerSet } from '@/lib/types';
+import type { Marker, MarkerSet, MarkerGroup } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 export default function MarkerDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { getMarkerById, markerSets, isInitialized, favoriteMarkerIds, toggleFavoriteMarker } = useMarkerData();
+  const { 
+    getMarkerById, 
+    markerSets, 
+    isInitialized, 
+    favoriteMarkerIds, 
+    toggleFavoriteMarker,
+    markerGroups, // Added
+    addMarkerToGroup, // Added
+    getGroupsForMarker, // Added
+  } = useMarkerData();
+  const { toast } = useToast();
 
   const markerId = typeof params.id === 'string' ? params.id : '';
   const marker = getMarkerById(markerId);
 
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
+
   useEffect(() => {
     if (isInitialized && !marker) {
-      // Optional: redirect if marker not found after initialization
-      // router.replace('/');
+      router.replace('/');
     }
   }, [isInitialized, marker, router]);
 
@@ -55,12 +69,26 @@ export default function MarkerDetailPage() {
     .map(id => markerSets.find(s => s.id === id))
     .filter(Boolean as unknown as (value: MarkerSet | undefined) => value is MarkerSet);
 
+  const belongingMarkerGroups = getGroupsForMarker(marker.id);
+  const availableGroupsToAdd = markerGroups.filter(g => !belongingMarkerGroups.find(bg => bg.id === g.id));
+
+
   const handleExploreClick = () => {
     router.push(`/?activePage=explorer&exploreMarkerId=${marker.id}`);
   };
 
   const handleSetBadgeClick = (setId: string) => {
     router.push(`/?activePage=palette&filterSetId=${setId}`);
+  };
+
+  const handleAddMarkerToGroup = () => {
+    if (!selectedGroupId) {
+      toast({ title: 'No Group Selected', description: 'Please select a group to add the marker to.', variant: 'destructive'});
+      return;
+    }
+    addMarkerToGroup(selectedGroupId, marker.id);
+    toast({ title: 'Marker Added to Group', description: `${marker.name} added to selected group.` });
+    setSelectedGroupId(''); // Reset selection
   };
 
   return (
@@ -94,7 +122,7 @@ export default function MarkerDetailPage() {
                   <Heart className={cn("h-5 w-5", isFavorite ? "text-red-500 fill-current" : "")} />
                 </Button>
               </CardHeader>
-              <CardContent className="p-6 pt-0">
+              <CardContent className="p-6 pt-0 space-y-4">
                 <div>
                   <h4 className="text-sm font-semibold text-foreground mb-2">Belongs to Sets:</h4>
                   {belongingSets.length > 0 ? (
@@ -115,6 +143,46 @@ export default function MarkerDetailPage() {
                     <p className="text-sm text-muted-foreground italic">Not part of any defined sets.</p>
                   )}
                 </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-2 mt-4">Belongs to Groups:</h4>
+                  {belongingMarkerGroups.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {belongingMarkerGroups.map(group => (
+                        <Badge key={group.id} variant="outline">
+                          <Users className="mr-1 h-3 w-3" />
+                          {group.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Not part of any custom groups.</p>
+                  )}
+                </div>
+
+                {availableGroupsToAdd.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <Label htmlFor="group-select" className="text-sm font-semibold text-foreground mb-2 block">Add to Group:</Label>
+                    <div className="flex items-center gap-2">
+                      <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                        <SelectTrigger id="group-select" className="flex-grow">
+                          <SelectValue placeholder="Select a group" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableGroupsToAdd.map(group => (
+                            <SelectItem key={group.id} value={group.id}>
+                              {group.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={handleAddMarkerToGroup} size="icon" title="Add to selected group" disabled={!selectedGroupId}>
+                        <PlusCircle className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
               </CardContent>
             </Card>
           </div>
