@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 interface MarkerCardProps {
   marker: Marker;
-  markerSets: MarkerSet[];
+  markerSets: MarkerSet[]; // Keep for consistency, though not directly used in this simplified version
   onCardClick?: (marker: Marker) => void;
   isOwned?: boolean;
   isFavorite?: boolean;
@@ -16,17 +16,6 @@ interface MarkerCardProps {
 
 export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, isFavorite = false, onToggleFavorite }: MarkerCardProps) {
   
-  let setNameDisplay = 'Unknown Set';
-  if (marker.setIds && marker.setIds.length > 0) {
-    const setNames = marker.setIds
-      .map(id => {
-        const set = markerSets.find(s => s.id === id);
-        return set ? set.name : id; 
-      })
-      .join(', ');
-    setNameDisplay = setNames;
-  }
-
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Prevent click if the favorite button was clicked
     if ((e.target as HTMLElement).closest('.favorite-button')) {
@@ -67,9 +56,9 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
           </div>
         )}
       </CardHeader>
-      <CardContent className="flex-grow p-2 flex flex-col justify-start min-h-18 space-y-1"> 
+      <CardContent className="flex-grow p-2 flex flex-col justify-between min-h-18"> 
         <CardTitle className="text-sm leading-tight">{marker.name}</CardTitle> 
-        <div className="flex items-center justify-between w-full mt-auto"> {/* mt-auto pushes this to bottom if space allows */}
+        <div className="flex items-center justify-between w-full">
           <p className="text-sm font-semibold text-foreground/90">{marker.id}</p>
           {onToggleFavorite && (
             <Button
@@ -87,4 +76,3 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
     </Card>
   );
 }
-
