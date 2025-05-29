@@ -47,24 +47,26 @@ export function MarkerDetailView({ marker, markerSets, isOpen, onClose, onExplor
           aria-label={`Full color preview for ${marker.name}`}
         />
 
-        <ScrollArea className="flex-1 p-6">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="text-2xl font-bold">{marker.name}</DialogTitle>
-            <DialogDescription className="text-lg text-muted-foreground">{marker.id}</DialogDescription>
-          </DialogHeader>
+        <ScrollArea className="flex-1"> {/* flex-1 directly on ScrollArea */}
+          <div className="p-6"> {/* Padding moved to an inner div */}
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-2xl font-bold">{marker.name}</DialogTitle>
+              <DialogDescription className="text-lg text-muted-foreground">{marker.id}</DialogDescription>
+            </DialogHeader>
 
-          <div className="pt-4 pb-4 space-y-3"> {/* Adjusted padding for scroll area */}
-            <div>
-              <h4 className="text-sm font-semibold text-foreground mb-2">Sets:</h4>
-              {belongingSets.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {belongingSets.map(set => (
-                    <Badge key={set.id} variant="secondary">{set.name}</Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">Not part of any defined sets.</p>
-              )}
+            <div className="pt-4 pb-4 space-y-3">
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-2">Sets:</h4>
+                {belongingSets.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {belongingSets.map(set => (
+                      <Badge key={set.id} variant="secondary">{set.name}</Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">Not part of any defined sets.</p>
+                )}
+              </div>
             </div>
           </div>
         </ScrollArea>
