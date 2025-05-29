@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react'; // Added Suspense
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Sidebar,
@@ -858,6 +858,14 @@ function AppContent() {
 }
 
 export default function OhuhuHarmonyPage() {
-  return <AppContent />;
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Compass className="h-16 w-16 text-primary animate-pulse" />
+        <p className="ml-4 text-xl text-foreground">Loading page data...</p>
+      </div>
+    }>
+      <AppContent />
+    </Suspense>
+  );
 }
-
