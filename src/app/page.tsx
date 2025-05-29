@@ -49,7 +49,7 @@ type SetFilterValue = string | null | '__owned__' | '__missing__' | '__favorites
 
 // Helper functions for color conversion
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  if (!hex) { 
+  if (!hex) {
     return null;
   }
   let normalizedHex = hex.replace(/^#/, '');
@@ -285,15 +285,18 @@ export default function OhuhuHarmonyPage() {
           }
         });
 
+        // Add any remaining markers that might not have been sorted (e.g., invalid hex, duplicates not handled by map logic if any)
+        // This ensures all markers from tempResults are included.
         tempResults.forEach(marker => {
           if (!usedMarkers.has(marker)) {
-            sortedMarkers.push(marker);
+            sortedMarkers.push(marker); // Add to the end if not already added
           }
         });
         tempResults = sortedMarkers;
 
       } catch (error) {
         console.error("Error sorting colors with color-sorter:", error);
+        // Fallback or no sort if error occurs
       }
     } else if (sortOrder === 'id') {
       tempResults.sort((a, b) => a.id.localeCompare(b.id));
@@ -476,7 +479,7 @@ export default function OhuhuHarmonyPage() {
               <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 gap-1">
+                    <Button variant={selectedColorCategory ? "secondary" : "outline"} size="sm" className="h-8 gap-1">
                       <ListFilter className="h-3.5 w-3.5" />
                       <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                         {selectedColorCategory ? `Color: ${selectedColorCategory.name}` : "Filter Color"}
@@ -513,7 +516,7 @@ export default function OhuhuHarmonyPage() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 gap-1">
+                    <Button variant={selectedSetId ? "secondary" : "outline"} size="sm" className="h-8 gap-1">
                       <Tags className="h-3.5 w-3.5" />
                       <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                         {getSetFilterLabel()}
@@ -621,3 +624,4 @@ export default function OhuhuHarmonyPage() {
     </SidebarProvider>
   );
 }
+
