@@ -11,18 +11,19 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
+  useSidebar, // Import useSidebar
 } from '@/components/ui/sidebar';
 import { AppLogo } from '@/components/core/app-logo';
 import { MarkerGrid } from '@/components/markers/marker-grid';
 import { ColorExplorer } from '@/components/tools/color-explorer';
 import { ManageSetsPage } from '@/components/profile/manage-sets';
-import { ManageGroupsPage } from '@/components/groups/manage-groups'; // New Import
+import { ManageGroupsPage } from '@/components/groups/manage-groups';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import type { Marker, MarkerSet } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon, Users } from 'lucide-react'; // Added Users for groups
+import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon, Users } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -47,7 +48,7 @@ const PALETTE_FILTER_COLOR_CATEGORY_KEY = 'ohuhuHarmony_paletteFilterColorCatego
 const PALETTE_SORT_ORDER_KEY = 'ohuhuHarmony_paletteSortOrder';
 
 
-type ActivePageContentType = 'palette' | 'explorer' | 'sets' | 'groups'; // Added 'groups'
+type ActivePageContentType = 'palette' | 'explorer' | 'sets' | 'groups';
 type SortOrder = 'hue' | 'id' | 'name';
 type SetFilterValue = string | null | '__owned__' | '__missing__' | '__favorites__';
 
@@ -158,10 +159,11 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
 }
 
 
-export default function OhuhuHarmonyPage() {
+function AppContent() {
   const { markers: allMarkers, markerSets, isInitialized, ownedSetIds, getMarkerById, favoriteMarkerIds, toggleFavoriteMarker } = useMarkerData();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isMobile, setOpenMobile } = useSidebar(); 
 
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
   
@@ -200,7 +202,7 @@ export default function OhuhuHarmonyPage() {
   const [activePageContent, setActivePageContent] = useState<ActivePageContentType>('palette');
   const [selectedMarkerForExplorer, setSelectedMarkerForExplorer] = useState<Marker | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Not used directly in AppContent, consider moving if needed for actions here
 
 
   useEffect(() => {
@@ -242,7 +244,7 @@ export default function OhuhuHarmonyPage() {
         router.replace(`${window.location.pathname}${query}`, { scroll: false });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, getMarkerById, router]); 
+  }, [searchParams, getMarkerById, router]); // activePageContent, selectedSetId, selectedMarkerForExplorer removed from deps to avoid loops
 
 
   useEffect(() => {
@@ -290,40 +292,43 @@ export default function OhuhuHarmonyPage() {
 
     // Apply sort order
     if (sortOrder === 'hue') {
-      const hexCodes = tempResults.map(marker => marker.hex).filter(hex => hex && hex.startsWith('#'));
+      const hexCodesWithNulls = tempResults.map(marker => marker.hex);
+      const validHexCodes = hexCodesWithNulls.filter(hex => hex && hex.startsWith('#')) as string[];
+      
       try {
-        const sortedHexCodes = sort(hexCodes);
-        
-        const markerMap = new Map<string, Marker[]>();
-        tempResults.forEach(marker => {
-          if (marker.hex) {
-            const existing = markerMap.get(marker.hex) || [];
-            existing.push(marker);
-            markerMap.set(marker.hex, existing);
-          }
-        });
-        
-        const sortedMarkers: Marker[] = [];
-        const usedMarkers = new Set<Marker>();
+          const sortedHexCodes = sort(validHexCodes);
+          
+          const markerMap = new Map<string, Marker[]>();
+          tempResults.forEach(marker => {
+            if (marker.hex) {
+              const existing = markerMap.get(marker.hex) || [];
+              existing.push(marker);
+              markerMap.set(marker.hex, existing);
+            }
+          });
+          
+          const sortedMarkers: Marker[] = [];
+          const usedMarkers = new Set<string>(); // Use marker IDs to track usage
 
-        sortedHexCodes.forEach(hex => {
-          const markersWithThisHex = markerMap.get(hex);
-          if (markersWithThisHex) {
-            markersWithThisHex.forEach(marker => {
-              if (!usedMarkers.has(marker)) {
-                sortedMarkers.push(marker);
-                usedMarkers.add(marker);
-              }
-            });
-          }
-        });
-        
-        tempResults.forEach(marker => {
-          if (!usedMarkers.has(marker)) {
-            sortedMarkers.push(marker); 
-          }
-        });
-        tempResults = sortedMarkers;
+          sortedHexCodes.forEach(hex => {
+            const markersWithThisHex = markerMap.get(hex);
+            if (markersWithThisHex) {
+              markersWithThisHex.forEach(marker => {
+                if (!usedMarkers.has(marker.id)) {
+                  sortedMarkers.push(marker);
+                  usedMarkers.add(marker.id);
+                }
+              });
+            }
+          });
+          
+          // Add any remaining markers (e.g., those with invalid hex or not covered by sorter)
+          tempResults.forEach(marker => {
+            if (!usedMarkers.has(marker.id)) {
+              sortedMarkers.push(marker); 
+            }
+          });
+          tempResults = sortedMarkers;
 
       } catch (error) {
         console.error("Error sorting colors with color-sorter:", error);
@@ -387,10 +392,12 @@ export default function OhuhuHarmonyPage() {
     setSelectedSetId(setId);
     setSelectedColorCategory(null); 
     setSearchTerm(''); 
+    if (isMobile) setOpenMobile(false);
   };
 
   const handleOpenMarkerDetail = (marker: Marker) => {
     router.push(`/marker/${marker.id}`);
+    if (isMobile) setOpenMobile(false); 
   };
 
   if (!isInitialized) {
@@ -474,7 +481,7 @@ export default function OhuhuHarmonyPage() {
                </div>;
       case 'sets':
         return <ManageSetsPage onViewSetActive={handleNavigateToPaletteWithSetFilter} />;
-      case 'groups': // New case for groups
+      case 'groups':
         return <ManageGroupsPage />;
       default:
         return (
@@ -507,19 +514,28 @@ export default function OhuhuHarmonyPage() {
     action: () => void;
     type: 'main' | 'navigation';
   }
+  
+  const createSidebarAction = (page: ActivePageContentType, clearExplorer: boolean = true) => {
+    return () => {
+      setActivePageContent(page);
+      if (clearExplorer) setSelectedMarkerForExplorer(null);
+      setSearchTerm('');
+      if (isMobile) setOpenMobile(false);
+    };
+  };
 
   const sidebarButtons: SidebarButtonConfig[] = [
-    { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: () => { setActivePageContent('palette'); setSelectedMarkerForExplorer(null); setSearchTerm(''); }},
-    { id: 'explorer', name: "Color Explorer", Icon: Compass, type: 'main', action: () => { setActivePageContent('explorer'); setSearchTerm(''); }},
-    { id: 'sets', name: "My Sets", Icon: Library, type: 'main', action: () => { setActivePageContent('sets'); setSelectedMarkerForExplorer(null); setSearchTerm(''); }},
-    { id: 'groups', name: "My Groups", Icon: Users, type: 'main', action: () => { setActivePageContent('groups'); setSelectedMarkerForExplorer(null); setSearchTerm(''); }}, // New "My Groups" button
+    { id: 'view_palette', name: "My Palette", Icon: LayoutGrid, type: 'navigation', action: createSidebarAction('palette')},
+    { id: 'explorer', name: "Color Explorer", Icon: Compass, type: 'main', action: createSidebarAction('explorer', false) },
+    { id: 'sets', name: "My Sets", Icon: Library, type: 'main', action: createSidebarAction('sets')},
+    { id: 'groups', name: "My Groups", Icon: Users, type: 'main', action: createSidebarAction('groups')},
   ];
 
   const getHeaderTitle = () => {
     if (activePageContent === 'palette') return "My Marker Palette";
     if (activePageContent === 'sets') return "My Sets";
     if (activePageContent === 'explorer') return "Color Explorer";
-    if (activePageContent === 'groups') return "My Marker Groups"; // New title for groups page
+    if (activePageContent === 'groups') return "My Marker Groups";
     const activeButton = sidebarButtons.find(btn => btn.id === activePageContent);
     return activeButton ? activeButton.name : "Ohuhu Harmony";
   };
@@ -550,197 +566,202 @@ export default function OhuhuHarmonyPage() {
 
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen">
-        <Sidebar collapsible="icon" variant="sidebar" className="border-r shadow-md">
-          <SidebarHeader className="p-4 border-b">
-             <AppLogo />
-          </SidebarHeader>
-          <SidebarContent className="p-0">
-            <ScrollArea className="h-full">
-              <div className="p-4 space-y-2">
-                {sidebarButtons.map(button => (
-                  <Button
-                    key={button.id}
-                    variant={
-                      (activePageContent === button.id && button.type === 'main') ||
-                      (activePageContent === 'palette' && button.id === 'view_palette')
-                      ? 'default'
-                      : 'ghost'
-                    }
-                    className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-                    onClick={button.action}
-                    title={button.name}
-                  >
-                    <button.Icon className="mr-2 h-5 w-5 group-data-[collapsible=icon]:mr-0" />
-                    <span className="group-data-[collapsible=icon]:hidden">{button.name}</span>
-                  </Button>
-                ))}
-              </div>
-              <Separator className="my-4 group-data-[collapsible=icon]:hidden" />
-            </ScrollArea>
-          </SidebarContent>
-          <SidebarFooter className="p-4 border-t group-data-[collapsible=icon]:hidden">
-            <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Ohuhu Harmony</p>
-          </SidebarFooter>
-        </Sidebar>
+    <>
+      <Sidebar collapsible="icon" variant="sidebar" className="border-r shadow-md">
+        <SidebarHeader className="p-4 border-b">
+            <AppLogo />
+        </SidebarHeader>
+        <SidebarContent className="p-0">
+          <ScrollArea className="h-full">
+            <div className="p-4 space-y-2">
+              {sidebarButtons.map(button => (
+                <Button
+                  key={button.id}
+                  variant={
+                    (activePageContent === button.id && button.type === 'main') ||
+                    (activePageContent === 'palette' && button.id === 'view_palette')
+                    ? 'default'
+                    : 'ghost'
+                  }
+                  className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+                  onClick={button.action}
+                  title={button.name}
+                >
+                  <button.Icon className="mr-2 h-5 w-5 group-data-[collapsible=icon]:mr-0" />
+                  <span className="group-data-[collapsible=icon]:hidden">{button.name}</span>
+                </Button>
+              ))}
+            </div>
+            <Separator className="my-4 group-data-[collapsible=icon]:hidden" />
+          </ScrollArea>
+        </SidebarContent>
+        <SidebarFooter className="p-4 border-t group-data-[collapsible=icon]:hidden">
+          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Ohuhu Harmony</p>
+        </SidebarFooter>
+      </Sidebar>
 
-        <SidebarInset className="flex-1 bg-background flex flex-col">
-          <header className="sticky top-0 z-10 flex h-auto flex-col gap-2 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 py-3">
-            <div className="flex h-10 items-center">
-              <SidebarTrigger className="md:hidden mr-2" />
-              <div className="flex items-center">
-                <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">{getHeaderTitle()}</h2>
+      <SidebarInset className="flex-1 bg-background flex flex-col">
+        <header className="sticky top-0 z-10 flex h-auto flex-col gap-2 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 py-3">
+          <div className="flex h-10 items-center">
+            <SidebarTrigger className="md:hidden mr-2" />
+            <div className="flex items-center">
+              <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">{getHeaderTitle()}</h2>
+            </div>
+          </div>
+
+          {isPaletteView && (
+            <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant={selectedColorCategory ? "secondary" : "outline"} size="sm" className="h-8 gap-1">
+                    <ListFilter className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                      {selectedColorCategory ? `Color: ${selectedColorCategory.name}` : "Filter Color"}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Filter by color category</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {COMMON_COLORS_FILTER.map((color) => (
+                    <DropdownMenuCheckboxItem
+                      key={color.name}
+                      checked={selectedColorCategory?.name === color.name}
+                      onSelect={(event) => {
+                          event.preventDefault();
+                          handleColorCategorySelect(selectedColorCategory?.name === color.name ? null : { name: color.name, hex: color.hexBase });
+                      }}
+                    >
+                      <ColorSwatch hexColor={color.hexBase} size="sm" className="mr-2 border-none shadow-none"/>
+                      {color.name}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  {selectedColorCategory && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={() => handleColorCategorySelect(null)}>
+                        Clear Color Filter
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant={selectedSetId ? "secondary" : "outline"} size="sm" className="h-8 gap-1">
+                    <Tags className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                      {getSetFilterLabel()}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Filter by marker set</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={selectedSetId === null}
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      handleSetFilterChange(null);
+                    }}
+                  >
+                    All Sets
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={selectedSetId === '__owned__'}
+                    disabled={ownedSetIds.length === 0}
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      handleSetFilterChange(selectedSetId === '__owned__' ? null : '__owned__');
+                    }}
+                  >
+                    Only My Owned Sets
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={selectedSetId === '__missing__'}
+                      onSelect={(event) => {
+                      event.preventDefault();
+                      handleSetFilterChange(selectedSetId === '__missing__' ? null : '__missing__');
+                    }}
+                  >
+                    Only Show Missing Markers
+                  </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                    checked={selectedSetId === '__favorites__'}
+                    disabled={favoriteMarkerIds.length === 0}
+                      onSelect={(event) => {
+                      event.preventDefault();
+                      handleSetFilterChange(selectedSetId === '__favorites__' ? null : '__favorites__');
+                    }}
+                  >
+                    <HeartIcon className="mr-2 h-3.5 w-3.5 text-red-500 fill-red-500" />
+                    Favorites Only
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Individual Sets</DropdownMenuLabel>
+                  {markerSets.map((set) => (
+                    <DropdownMenuCheckboxItem
+                      key={set.id}
+                      checked={selectedSetId === set.id}
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        handleSetFilterChange(selectedSetId === set.id ? null : set.id);
+                      }}
+                    >
+                      {set.name}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1">
+                    <SortAsc className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                      Sort: {sortOrderLabels[sortOrder]}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Sort markers by</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOrder)}>
+                    <DropdownMenuRadioItem value="hue">By Color</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="id">By ID</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="name">By Name</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div className="relative flex-1 md:grow-0 max-w-xs ml-auto">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search markers..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-lg bg-card pl-8 md:w-[200px] lg:w-[320px]"
+                />
               </div>
             </div>
-
-            {isPaletteView && (
-              <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant={selectedColorCategory ? "secondary" : "outline"} size="sm" className="h-8 gap-1">
-                      <ListFilter className="h-3.5 w-3.5" />
-                      <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        {selectedColorCategory ? `Color: ${selectedColorCategory.name}` : "Filter Color"}
-                      </span>
-                      <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuLabel>Filter by color category</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {COMMON_COLORS_FILTER.map((color) => (
-                      <DropdownMenuCheckboxItem
-                        key={color.name}
-                        checked={selectedColorCategory?.name === color.name}
-                        onSelect={(event) => {
-                           event.preventDefault();
-                           handleColorCategorySelect(selectedColorCategory?.name === color.name ? null : { name: color.name, hex: color.hexBase });
-                        }}
-                      >
-                        <ColorSwatch hexColor={color.hexBase} size="sm" className="mr-2 border-none shadow-none"/>
-                        {color.name}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                    {selectedColorCategory && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => handleColorCategorySelect(null)}>
-                          Clear Color Filter
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant={selectedSetId ? "secondary" : "outline"} size="sm" className="h-8 gap-1">
-                      <Tags className="h-3.5 w-3.5" />
-                      <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        {getSetFilterLabel()}
-                      </span>
-                      <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuLabel>Filter by marker set</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuCheckboxItem
-                      checked={selectedSetId === null}
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        handleSetFilterChange(null);
-                      }}
-                    >
-                      All Sets
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={selectedSetId === '__owned__'}
-                      disabled={ownedSetIds.length === 0}
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        handleSetFilterChange(selectedSetId === '__owned__' ? null : '__owned__');
-                      }}
-                    >
-                      Only My Owned Sets
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={selectedSetId === '__missing__'}
-                       onSelect={(event) => {
-                        event.preventDefault();
-                        handleSetFilterChange(selectedSetId === '__missing__' ? null : '__missing__');
-                      }}
-                    >
-                      Only Show Missing Markers
-                    </DropdownMenuCheckboxItem>
-                     <DropdownMenuCheckboxItem
-                      checked={selectedSetId === '__favorites__'}
-                      disabled={favoriteMarkerIds.length === 0}
-                       onSelect={(event) => {
-                        event.preventDefault();
-                        handleSetFilterChange(selectedSetId === '__favorites__' ? null : '__favorites__');
-                      }}
-                    >
-                      <HeartIcon className="mr-2 h-3.5 w-3.5 text-red-500 fill-red-500" />
-                      Favorites Only
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Individual Sets</DropdownMenuLabel>
-                    {markerSets.map((set) => (
-                      <DropdownMenuCheckboxItem
-                        key={set.id}
-                        checked={selectedSetId === set.id}
-                        onSelect={(event) => {
-                          event.preventDefault();
-                          handleSetFilterChange(selectedSetId === set.id ? null : set.id);
-                        }}
-                      >
-                        {set.name}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 gap-1">
-                      <SortAsc className="h-3.5 w-3.5" />
-                      <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        Sort: {sortOrderLabels[sortOrder]}
-                      </span>
-                      <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuLabel>Sort markers by</DropdownMenuLabel>
-                    <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOrder)}>
-                      <DropdownMenuRadioItem value="hue">By Color</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="id">By ID</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="name">By Name</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <div className="relative flex-1 md:grow-0 max-w-xs ml-auto">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Search markers..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full rounded-lg bg-card pl-8 md:w-[200px] lg:w-[320px]"
-                  />
-                </div>
-              </div>
-            )}
-          </header>
-          <main className="flex-1 overflow-auto">
-             {renderMainPageContent()}
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+          )}
+        </header>
+        <main className="flex-1 overflow-auto">
+            {renderMainPageContent()}
+        </main>
+      </SidebarInset>
+    </>
   );
 }
 
+export default function OhuhuHarmonyPage() {
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <AppContent />
+    </SidebarProvider>
+  );
+}
