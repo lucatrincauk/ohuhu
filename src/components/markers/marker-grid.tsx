@@ -7,9 +7,11 @@ interface MarkerGridProps {
   markerSets: MarkerSet[];
   onMarkerCardClick?: (marker: Marker) => void;
   ownedSetIds?: string[];
+  favoriteMarkerIds?: string[];
+  onToggleFavorite?: (markerId: string) => void;
 }
 
-export function MarkerGrid({ markers, markerSets, onMarkerCardClick, ownedSetIds }: MarkerGridProps) {
+export function MarkerGrid({ markers, markerSets, onMarkerCardClick, ownedSetIds, favoriteMarkerIds, onToggleFavorite }: MarkerGridProps) {
   if (!markers || markers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -21,6 +23,7 @@ export function MarkerGrid({ markers, markerSets, onMarkerCardClick, ownedSetIds
   }
 
   const currentOwnedSetIds = ownedSetIds || [];
+  const currentFavoriteMarkerIds = favoriteMarkerIds || [];
 
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 p-2 md:p-3">
@@ -31,6 +34,8 @@ export function MarkerGrid({ markers, markerSets, onMarkerCardClick, ownedSetIds
           markerSets={markerSets}
           onCardClick={onMarkerCardClick}
           isOwned={marker.setIds.some(sid => currentOwnedSetIds.includes(sid))}
+          isFavorite={currentFavoriteMarkerIds.includes(marker.id)}
+          onToggleFavorite={onToggleFavorite}
         />
       ))}
     </div>

@@ -21,7 +21,7 @@ import type { Marker, MarkerSet } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc } from 'lucide-react';
+import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Star as StarIcon } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -44,12 +44,12 @@ import { sort } from 'color-sorter';
 
 type ActivePageContentType = 'palette' | 'explorer' | 'sets';
 type SortOrder = 'hue' | 'id' | 'name';
-type SetFilterValue = string | null | '__owned__' | '__missing__';
+type SetFilterValue = string | null | '__owned__' | '__missing__' | '__favorites__';
 
 
 // Helper functions for color conversion
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  if (!hex) {
+  if (!hex) { // Added check for null or undefined hex
     return null;
   }
   let normalizedHex = hex.replace(/^#/, '');
@@ -154,7 +154,7 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
 
 
 export default function OhuhuHarmonyPage() {
-  const { markers: allMarkers, markerSets, isInitialized, ownedSetIds, getMarkerById } = useMarkerData();
+  const { markers: allMarkers, markerSets, isInitialized, ownedSetIds, getMarkerById, favoriteMarkerIds, toggleFavoriteMarker } = useMarkerData();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -203,6 +203,8 @@ export default function OhuhuHarmonyPage() {
       } else {
         tempResults = tempResults.filter(marker => !marker.setIds.some(sid => ownedSetIds.includes(sid)));
       }
+    } else if (selectedSetId === '__favorites__') {
+        tempResults = tempResults.filter(marker => favoriteMarkerIds.includes(marker.id));
     } else if (selectedSetId) { 
       tempResults = tempResults.filter(marker => marker.setIds.includes(selectedSetId));
     }
@@ -276,7 +278,7 @@ export default function OhuhuHarmonyPage() {
 
     setDisplayedMarkers(tempResults);
 
-  }, [searchTerm, selectedColorCategory, selectedSetId, allMarkers, isInitialized, activePageContent, sortOrder, ownedSetIds]);
+  }, [searchTerm, selectedColorCategory, selectedSetId, allMarkers, isInitialized, activePageContent, sortOrder, ownedSetIds, favoriteMarkerIds]);
 
 
   const handleSetFilterChange = (setId: SetFilterValue) => {
@@ -289,12 +291,6 @@ export default function OhuhuHarmonyPage() {
     } else {
       setSelectedColorCategory(category);
     }
-  };
-
-  const handleSelectMarkerForExplorer = (marker: Marker) => {
-    setSelectedMarkerForExplorer(marker);
-    setActivePageContent('explorer');
-    setSearchTerm('');
   };
 
   const clearSelectedMarkerForExplorer = () => {
@@ -331,6 +327,8 @@ export default function OhuhuHarmonyPage() {
                   markerSets={markerSets}
                   onMarkerCardClick={handleOpenMarkerDetail}
                   ownedSetIds={ownedSetIds}
+                  favoriteMarkerIds={favoriteMarkerIds}
+                  onToggleFavorite={toggleFavoriteMarker}
                 />;
       case 'explorer':
         return <div className="p-4 md:p-6 max-w-2xl mx-auto">
@@ -348,6 +346,8 @@ export default function OhuhuHarmonyPage() {
                   markerSets={markerSets}
                   onMarkerCardClick={handleOpenMarkerDetail}
                   ownedSetIds={ownedSetIds}
+                  favoriteMarkerIds={favoriteMarkerIds}
+                  onToggleFavorite={toggleFavoriteMarker}
                 />;
     }
   };
@@ -387,6 +387,9 @@ export default function OhuhuHarmonyPage() {
     }
     if (selectedSetId === '__missing__') {
       return "Set: Missing Only";
+    }
+    if (selectedSetId === '__favorites__') {
+      return "Set: Favorites Only";
     }
     if (selectedSetId) {
       const set = markerSets.find(s => s.id === selectedSetId);
@@ -523,6 +526,17 @@ export default function OhuhuHarmonyPage() {
                       }}
                     >
                       Only Show Missing Markers
+                    </DropdownMenuCheckboxItem>
+                     <DropdownMenuCheckboxItem
+                      checked={selectedSetId === '__favorites__'}
+                      disabled={favoriteMarkerIds.length === 0}
+                       onSelect={(event) => {
+                        event.preventDefault();
+                        handleSetFilterChange(selectedSetId === '__favorites__' ? null : '__favorites__');
+                      }}
+                    >
+                      <StarIcon className="mr-2 h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                      Favorites Only
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel>Individual Sets</DropdownMenuLabel>

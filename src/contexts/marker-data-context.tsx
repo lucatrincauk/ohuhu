@@ -8,17 +8,20 @@ import { INITIAL_MARKERS, INITIAL_MARKER_SETS } from '@/lib/constants';
 const MARKERS_STORAGE_KEY = 'ohuhuHarmony_markers';
 const SETS_STORAGE_KEY = 'ohuhuHarmony_markerSets';
 const OWNED_SETS_STORAGE_KEY = 'ohuhuHarmony_ownedSetIds';
+const FAVORITE_MARKERS_STORAGE_KEY = 'ohuhuHarmony_favoriteMarkerIds';
 
 export interface MarkerDataContextType {
   markers: Marker[];
   markerSets: MarkerSet[];
   ownedSetIds: string[];
+  favoriteMarkerIds: string[];
   isInitialized: boolean;
   addMarker: (newMarkerData: { id?: string; name: string; hex: string; setId: string }) => void;
-  updateMarker: (markerId: string, updates: Partial<Omit<Marker, 'id' | 'setIds'>>) => void; // setIds is not directly updatable here
+  updateMarker: (markerId: string, updates: Partial<Omit<Marker, 'id' | 'setIds'>>) => void;
   getMarkerById: (id: string) => Marker | undefined;
   addMarkerSet: (newSet: Omit<MarkerSet, 'id'> & { id?: string }) => void;
   updateOwnedSetIds: (newOwnedSetIds: string[]) => void;
+  toggleFavoriteMarker: (markerId: string) => void;
 }
 
 export const MarkerDataContext = createContext<MarkerDataContextType | undefined>(undefined);
@@ -27,11 +30,11 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
   const [markersState, setMarkersState] = useState<Marker[]>([]);
   const [markerSetsState, setMarkerSetsState] = useState<MarkerSet[]>([]);
   const [ownedSetIdsState, setOwnedSetIdsState] = useState<string[]>([]);
+  const [favoriteMarkerIdsState, setFavoriteMarkerIdsState] = useState<string[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     try {
-      // Always initialize from constants and then update localStorage
       setMarkersState(INITIAL_MARKERS);
       localStorage.setItem(MARKERS_STORAGE_KEY, JSON.stringify(INITIAL_MARKERS));
 
@@ -42,14 +45,24 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
       if (storedOwnedSetIds) {
         setOwnedSetIdsState(JSON.parse(storedOwnedSetIds));
       } else {
-        setOwnedSetIdsState([]); 
+        setOwnedSetIdsState([]);
         localStorage.setItem(OWNED_SETS_STORAGE_KEY, JSON.stringify([]));
       }
+
+      const storedFavoriteMarkerIds = localStorage.getItem(FAVORITE_MARKERS_STORAGE_KEY);
+      if (storedFavoriteMarkerIds) {
+        setFavoriteMarkerIdsState(JSON.parse(storedFavoriteMarkerIds));
+      } else {
+        setFavoriteMarkerIdsState([]);
+        localStorage.setItem(FAVORITE_MARKERS_STORAGE_KEY, JSON.stringify([]));
+      }
+
     } catch (error) {
       console.error("Failed to access localStorage or initialize data:", error);
       setMarkersState(INITIAL_MARKERS);
       setMarkerSetsState(INITIAL_MARKER_SETS);
       setOwnedSetIdsState([]);
+      setFavoriteMarkerIdsState([]);
     }
     setIsInitialized(true);
   }, []);
@@ -67,7 +80,7 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
       id: newMarkerData.id || `custom-${Date.now()}`,
       name: newMarkerData.name,
       hex: newMarkerData.hex,
-      setIds: [newMarkerData.setId], // New custom markers belong to one set initially
+      setIds: [newMarkerData.setId],
     };
     setMarkersState(prevMarkers => {
       const updatedMarkers = [...prevMarkers, markerWithIdAndSetIds];
@@ -75,7 +88,7 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
       return updatedMarkers;
     });
   }, [updateLocalStorage]);
-  
+
   const updateMarker = useCallback((markerId: string, updates: Partial<Omit<Marker, 'id' | 'setIds'>>) => {
     setMarkersState(prevMarkers => {
       const updatedMarkers = prevMarkers.map(marker =>
@@ -104,17 +117,33 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
     updateLocalStorage(OWNED_SETS_STORAGE_KEY, newOwnedSetIds);
   }, [updateLocalStorage]);
 
+  const toggleFavoriteMarker = useCallback((markerId: string) => {
+    setFavoriteMarkerIdsState(prevFavorites => {
+      const isFavorited = prevFavorites.includes(markerId);
+      let updatedFavorites;
+      if (isFavorited) {
+        updatedFavorites = prevFavorites.filter(id => id !== markerId);
+      } else {
+        updatedFavorites = [...prevFavorites, markerId];
+      }
+      updateLocalStorage(FAVORITE_MARKERS_STORAGE_KEY, updatedFavorites);
+      return updatedFavorites;
+    });
+  }, [updateLocalStorage]);
+
   return (
     <MarkerDataContext.Provider value={{
       markers: markersState,
       markerSets: markerSetsState,
       ownedSetIds: ownedSetIdsState,
+      favoriteMarkerIds: favoriteMarkerIdsState,
       isInitialized,
       addMarker,
       updateMarker,
       getMarkerById,
       addMarkerSet,
-      updateOwnedSetIds
+      updateOwnedSetIds,
+      toggleFavoriteMarker,
     }}>
       {children}
     </MarkerDataContext.Provider>
