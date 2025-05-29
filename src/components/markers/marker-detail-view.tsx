@@ -12,9 +12,8 @@ import {
   DialogClose,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Compass, Info } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge'; // Import Badge
+import { Compass } from 'lucide-react';
 
 interface MarkerDetailViewProps {
   marker: Marker | null;
@@ -29,10 +28,9 @@ export function MarkerDetailView({ marker, markerSets, isOpen, onClose, onExplor
     return null;
   }
 
-  const belongingSetNames = marker.setIds
-    .map(id => markerSets.find(s => s.id === id)?.name)
-    .filter(Boolean as unknown as (value: string | undefined) => value is string)
-    .join(', ');
+  const belongingSets = marker.setIds
+    .map(id => markerSets.find(s => s.id === id))
+    .filter(Boolean as unknown as (value: MarkerSet | undefined) => value is MarkerSet);
 
   const handleExploreClick = () => {
     onExplore(marker);
@@ -54,16 +52,20 @@ export function MarkerDetailView({ marker, markerSets, isOpen, onClose, onExplor
         
         <div className="px-6 pb-4 space-y-3">
           <div>
-            <h4 className="text-sm font-semibold text-foreground mb-1">Sets:</h4>
-            {belongingSetNames ? (
-              <p className="text-sm text-muted-foreground">{belongingSetNames}</p>
+            <h4 className="text-sm font-semibold text-foreground mb-2">Sets:</h4>
+            {belongingSets.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {belongingSets.map(set => (
+                  <Badge key={set.id} variant="secondary">{set.name}</Badge>
+                ))}
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground italic">Not part of any defined sets.</p>
             )}
           </div>
         </div>
 
-        <DialogFooter className="p-6 pt-0 border-t">
+        <DialogFooter className="p-6 pt-0 border-t mt-4">
           <Button variant="outline" onClick={handleExploreClick} className="w-full sm:w-auto">
             <Compass className="mr-2 h-4 w-4" />
             Explore in Color Explorer
