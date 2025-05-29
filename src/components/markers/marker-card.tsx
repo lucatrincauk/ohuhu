@@ -2,7 +2,7 @@
 import type { Marker, MarkerSet } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star } from 'lucide-react';
+import { Heart } from 'lucide-react'; // Changed from Star
 import { cn } from '@/lib/utils';
 
 interface MarkerCardProps {
@@ -28,7 +28,7 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
   }
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Prevent click if the star button was clicked
+    // Prevent click if the favorite button was clicked
     if ((e.target as HTMLElement).closest('.favorite-button')) {
       return;
     }
@@ -38,7 +38,7 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
   };
 
   const handleFavoriteToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation(); // Prevent card click when star is clicked
+    e.stopPropagation(); // Prevent card click when favorite is clicked
     if (onToggleFavorite) {
       onToggleFavorite(marker.id);
     }
@@ -70,11 +70,11 @@ export function MarkerCard({ marker, markerSets, onCardClick, isOwned = true, is
           <Button
             variant="ghost"
             size="icon"
-            className="favorite-button absolute bottom-1 right-1 h-7 w-7 p-1 text-amber-400 hover:text-amber-500 bg-background/30 hover:bg-background/70 rounded-full"
+            className="favorite-button absolute bottom-1 right-1 h-7 w-7 p-1 bg-background/30 hover:bg-background/70 rounded-full"
             onClick={handleFavoriteToggle}
             title={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
-            <Star className={cn("h-4 w-4", isFavorite && "fill-current")} />
+            <Heart className={cn("h-4 w-4", isFavorite ? "text-red-500 fill-current" : "text-muted-foreground")} />
           </Button>
         )}
       </CardHeader>

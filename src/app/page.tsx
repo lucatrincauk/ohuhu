@@ -21,7 +21,7 @@ import type { Marker, MarkerSet } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Star as StarIcon } from 'lucide-react';
+import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon } from 'lucide-react'; // Changed from StarIcon
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -535,7 +535,7 @@ export default function OhuhuHarmonyPage() {
                         handleSetFilterChange(selectedSetId === '__favorites__' ? null : '__favorites__');
                       }}
                     >
-                      <StarIcon className="mr-2 h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                      <HeartIcon className="mr-2 h-3.5 w-3.5 text-red-500 fill-red-500" /> {/* Changed from StarIcon */}
                       Favorites Only
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuSeparator />
