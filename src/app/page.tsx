@@ -21,7 +21,7 @@ import type { Marker, MarkerSet } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon } from 'lucide-react'; // Changed from StarIcon
+import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -49,7 +49,7 @@ type SetFilterValue = string | null | '__owned__' | '__missing__' | '__favorites
 
 // Helper functions for color conversion
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  if (!hex) { // Added check for null or undefined hex
+  if (!hex) { 
     return null;
   }
   let normalizedHex = hex.replace(/^#/, '');
@@ -170,19 +170,46 @@ export default function OhuhuHarmonyPage() {
 
 
   useEffect(() => {
-    const queryActivePage = searchParams.get('activePage');
+    const queryActivePage = searchParams.get('activePage') as ActivePageContentType | null;
     const queryExploreMarkerId = searchParams.get('exploreMarkerId');
+    const queryFilterSetId = searchParams.get('filterSetId') as SetFilterValue | null;
+
+    let newActivePage = activePageContent;
+    let newSelectedSetId = selectedSetId;
+    let newSelectedMarkerForExplorer = selectedMarkerForExplorer;
+
+    if (queryActivePage) {
+      newActivePage = queryActivePage;
+    }
 
     if (queryActivePage === 'explorer' && queryExploreMarkerId) {
       const markerToExplore = getMarkerById(queryExploreMarkerId);
       if (markerToExplore) {
-        setSelectedMarkerForExplorer(markerToExplore);
-        setActivePageContent('explorer');
-        // Clean up query params after use
-        router.replace('/', { scroll: false });
+        newSelectedMarkerForExplorer = markerToExplore;
+        newActivePage = 'explorer';
       }
+    } else if ((queryActivePage === 'palette' || !queryActivePage) && queryFilterSetId) {
+        newSelectedSetId = queryFilterSetId;
+        newActivePage = 'palette';
     }
-  }, [searchParams, getMarkerById, router]);
+    
+    if (newActivePage !== activePageContent) setActivePageContent(newActivePage);
+    if (newSelectedSetId !== selectedSetId) setSelectedSetId(newSelectedSetId);
+    if (newSelectedMarkerForExplorer !== selectedMarkerForExplorer) setSelectedMarkerForExplorer(newSelectedMarkerForExplorer);
+
+
+    if (queryActivePage || queryExploreMarkerId || queryFilterSetId) {
+        // Clean up query params after use by removing them
+        const current = new URLSearchParams(Array.from(searchParams.entries()));
+        current.delete('activePage');
+        current.delete('exploreMarkerId');
+        current.delete('filterSetId');
+        const search = current.toString();
+        const query = search ? `?${search}` : "";
+        router.replace(`${window.location.pathname}${query}`, { scroll: false });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, getMarkerById, router]); // Dependencies remain critical here
 
 
   useEffect(() => {
@@ -231,7 +258,6 @@ export default function OhuhuHarmonyPage() {
     // Apply sort order
     if (sortOrder === 'hue') {
       const hexCodes = tempResults.map(marker => marker.hex).filter(hex => hex && hex.startsWith('#'));
-      // Use a try-catch block in case color-sorter fails (e.g., on invalid hex)
       try {
         const sortedHexCodes = sort(hexCodes);
         
@@ -258,7 +284,7 @@ export default function OhuhuHarmonyPage() {
             });
           }
         });
-        // Add any remaining markers (e.g., those with invalid hex or not processed by sorter)
+
         tempResults.forEach(marker => {
           if (!usedMarkers.has(marker)) {
             sortedMarkers.push(marker);
@@ -268,7 +294,6 @@ export default function OhuhuHarmonyPage() {
 
       } catch (error) {
         console.error("Error sorting colors with color-sorter:", error);
-        // Fallback or keep original order if sorter fails
       }
     } else if (sortOrder === 'id') {
       tempResults.sort((a, b) => a.id.localeCompare(b.id));
@@ -535,7 +560,7 @@ export default function OhuhuHarmonyPage() {
                         handleSetFilterChange(selectedSetId === '__favorites__' ? null : '__favorites__');
                       }}
                     >
-                      <HeartIcon className="mr-2 h-3.5 w-3.5 text-red-500 fill-red-500" /> {/* Changed from StarIcon */}
+                      <HeartIcon className="mr-2 h-3.5 w-3.5 text-red-500 fill-red-500" />
                       Favorites Only
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuSeparator />
