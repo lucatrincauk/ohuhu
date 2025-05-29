@@ -4,7 +4,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  SidebarProvider,
   Sidebar,
   SidebarHeader,
   SidebarContent,
@@ -23,7 +22,7 @@ import type { Marker, MarkerSet } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon, Users } from 'lucide-react';
+import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon, Users, PlusCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -803,6 +802,16 @@ function AppContent() {
                         {group.name}
                       </DropdownMenuCheckboxItem>
                     ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        setActivePageContent('groups');
+                        if (isMobile) setOpenMobile(false);
+                      }}
+                    >
+                      <PlusCircle className="mr-2 h-3.5 w-3.5" />
+                      Create New Group...
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -849,9 +858,6 @@ function AppContent() {
 }
 
 export default function OhuhuHarmonyPage() {
-  return (
-    <SidebarProvider defaultOpen={true}>
-      <AppContent />
-    </SidebarProvider>
-  );
+  return <AppContent />;
 }
+

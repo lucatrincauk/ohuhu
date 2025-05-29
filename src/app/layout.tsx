@@ -5,6 +5,7 @@ import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { MarkerDataProvider } from '@/contexts/marker-data-context';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 const geistSans = GeistSans;
 const geistMono = GeistMono;
@@ -23,8 +24,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <MarkerDataProvider>
-          {children}
-          <Toaster />
+          <SidebarProvider defaultOpen={true}>
+            {children}
+            <Toaster />
+          </SidebarProvider>
         </MarkerDataProvider>
       </body>
     </html>
