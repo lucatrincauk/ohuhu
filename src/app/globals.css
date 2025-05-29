@@ -55,40 +55,39 @@ body {
   }
 
   .dark {
-    /* Keeping dark mode as a sensible default, can be customized further if needed */
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 255 21% 74%; /* #A59AC4 Desaturated purple */
-    --primary-foreground: 0 0% 10%; /* Darker text for primary in dark mode */
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 195 24% 60%; /* #79A3B1 Blue */
-    --accent-foreground: 0 0% 10%; /* Darker text for accent in dark mode */
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 255 21% 74%;
+    --background: 255 15% 20%;
+    --foreground: 255 15% 85%;
+    --card: 255 15% 25%;
+    --card-foreground: 255 15% 85%;
+    --popover: 255 15% 25%;
+    --popover-foreground: 255 15% 85%;
+    --primary: 255 20% 50%;
+    --primary-foreground: 255 15% 90%;
+    --secondary: 255 15% 30%;
+    --secondary-foreground: 255 15% 80%;
+    --muted: 255 15% 30%;
+    --muted-foreground: 255 15% 60%;
+    --accent: 195 20% 45%;
+    --accent-foreground: 195 15% 90%;
+    --destructive: 0 62.8% 30.6%; /* Keeping original dark destructive */
+    --destructive-foreground: 0 0% 98%; /* Keeping original dark destructive foreground */
+    --border: 255 15% 30%;
+    --input: 255 15% 30%;
+    --ring: 255 20% 50%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    --sidebar-background: 0 0% 7%; /* Darker sidebar background */
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 255 21% 74%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 195 24% 60%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 14.9%;
-    --sidebar-ring: 255 21% 74%;
+    --sidebar-background: 255 15% 18%;
+    --sidebar-foreground: 255 15% 85%;
+    --sidebar-primary: 255 20% 50%;
+    --sidebar-primary-foreground: 255 15% 90%;
+    --sidebar-accent: 195 20% 45%;
+    --sidebar-accent-foreground: 195 15% 90%;
+    --sidebar-border: 255 15% 25%;
+    --sidebar-ring: 255 20% 50%;
   }
 }
 
