@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Compass, Info, Heart, PlusCircle, SwatchBook, Library } from 'lucide-react';
+import { ArrowLeft, Compass, Info, Heart, PlusCircle, SwatchBook, Library, XCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Marker, MarkerSet, MarkerPalette } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,6 +14,18 @@ import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 export default function MarkerDetailPage() {
   const router = useRouter();
@@ -26,6 +38,7 @@ export default function MarkerDetailPage() {
     toggleFavoriteMarker,
     markerPalettes,
     addMarkerToPalette,
+    removeMarkerFromPalette, // Added
     getPalettesForMarker,
   } = useMarkerData();
   const { toast } = useToast();
@@ -95,6 +108,11 @@ export default function MarkerDetailPage() {
     setSelectedPaletteId(''); 
   };
 
+  const handleRemoveMarkerFromPalette = (paletteId: string, paletteName: string) => {
+    removeMarkerFromPalette(paletteId, marker.id);
+    toast({ title: 'Marker Removed', description: `${marker.name} removed from "${paletteName}" palette.` });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
@@ -152,20 +170,42 @@ export default function MarkerDetailPage() {
                 <div>
                   <h4 className="text-sm font-semibold text-foreground mb-2 mt-4">Belongs to Palettes:</h4> 
                   {belongingMarkerPalettes.length > 0 ? ( 
-                    <div className="flex flex-wrap gap-2">
+                    <ul className="space-y-2">
                       {belongingMarkerPalettes.map(palette => ( 
-                        <Badge 
-                          key={palette.id} 
-                          variant="outline"
-                          className="cursor-pointer hover:bg-accent/20"
-                          onClick={() => handlePaletteBadgeClick(palette.id)}
-                          title={`View markers in "${palette.name}" palette`}
-                        >
-                          <SwatchBook className="mr-1 h-3 w-3" /> 
-                          {palette.name}
-                        </Badge>
+                        <li key={palette.id} className="flex items-center justify-between gap-2 p-2 border rounded-md hover:bg-muted/50">
+                          <Badge 
+                            variant="outline"
+                            className="cursor-pointer hover:bg-accent/20 flex-grow text-left justify-start"
+                            onClick={() => handlePaletteBadgeClick(palette.id)}
+                            title={`View markers in "${palette.name}" palette`}
+                          >
+                            <SwatchBook className="mr-1 h-3 w-3" /> 
+                            {palette.name}
+                          </Badge>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 p-1 text-destructive hover:bg-destructive/10" title={`Remove from "${palette.name}" palette`}>
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirm Removal</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to remove marker "{marker.name}" from the "{palette.name}" palette?
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleRemoveMarkerFromPalette(palette.id, palette.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Remove
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   ) : (
                     <p className="text-sm text-muted-foreground italic">Not part of any custom palettes.</p> 
                   )}
@@ -214,3 +254,4 @@ export default function MarkerDetailPage() {
     </div>
   );
 }
+
