@@ -199,7 +199,6 @@ export default function OhuhuHarmonyPage() {
 
 
     if (queryActivePage || queryExploreMarkerId || queryFilterSetId) {
-        // Clean up query params after use by removing them
         const current = new URLSearchParams(Array.from(searchParams.entries()));
         current.delete('activePage');
         current.delete('exploreMarkerId');
@@ -209,7 +208,7 @@ export default function OhuhuHarmonyPage() {
         router.replace(`${window.location.pathname}${query}`, { scroll: false });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, getMarkerById, router]); // Dependencies remain critical here
+  }, [searchParams, getMarkerById, router]); 
 
 
   useEffect(() => {
@@ -284,19 +283,16 @@ export default function OhuhuHarmonyPage() {
             });
           }
         });
-
-        // Add any remaining markers that might not have been sorted (e.g., invalid hex, duplicates not handled by map logic if any)
-        // This ensures all markers from tempResults are included.
+        
         tempResults.forEach(marker => {
           if (!usedMarkers.has(marker)) {
-            sortedMarkers.push(marker); // Add to the end if not already added
+            sortedMarkers.push(marker); 
           }
         });
         tempResults = sortedMarkers;
 
       } catch (error) {
         console.error("Error sorting colors with color-sorter:", error);
-        // Fallback or no sort if error occurs
       }
     } else if (sortOrder === 'id') {
       tempResults.sort((a, b) => a.id.localeCompare(b.id));
@@ -336,7 +332,6 @@ export default function OhuhuHarmonyPage() {
     router.push(`/marker/${marker.id}`);
   };
 
-
   if (!isInitialized) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -347,17 +342,64 @@ export default function OhuhuHarmonyPage() {
   }
   const isPaletteView = activePageContent === 'palette';
 
+  const getPaletteTitle = () => {
+    let title = "All Markers"; 
+
+    if (selectedSetId === '__favorites__') {
+      title = "Favorite Markers";
+    } else if (selectedSetId === '__owned__') {
+      title = "Owned Markers";
+    } else if (selectedSetId === '__missing__') {
+      title = "Missing Markers";
+    } else if (selectedSetId) {
+      const set = markerSets.find(s => s.id === selectedSetId);
+      title = set ? `${set.name} Markers` : "Selected Set Markers";
+    }
+
+    if (selectedColorCategory) {
+      if (title === "All Markers") {
+        title = `${selectedColorCategory.name} Markers`;
+      } else {
+        const parts = title.split(" Markers");
+        if (parts.length > 1 && parts[0].trim() !== "") {
+           title = `${parts[0].trim()} ${selectedColorCategory.name} Markers`;
+        } else {
+           title = `${selectedColorCategory.name} Markers`;
+        }
+      }
+    }
+
+    if (searchTerm.trim() !== '') {
+      if (title === "All Markers" && !selectedColorCategory && !(selectedSetId && selectedSetId !== '__favorites__' && selectedSetId !== '__owned__' && selectedSetId !== '__missing__')) {
+        title = `Search results for "${searchTerm.trim()}"`;
+      } else { 
+        title += ` (matching "${searchTerm.trim()}")`;
+      }
+    }
+    return title;
+  };
+
+
   const renderMainPageContent = () => {
     switch (activePageContent) {
       case 'palette':
-        return <MarkerGrid
-                  markers={displayedMarkers}
-                  markerSets={markerSets}
-                  onMarkerCardClick={handleOpenMarkerDetail}
-                  ownedSetIds={ownedSetIds}
-                  favoriteMarkerIds={favoriteMarkerIds}
-                  onToggleFavorite={toggleFavoriteMarker}
-                />;
+        return (
+          <>
+            <div className="px-2 md:px-3 pt-3">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                {getPaletteTitle()}
+              </h3>
+            </div>
+            <MarkerGrid
+              markers={displayedMarkers}
+              markerSets={markerSets}
+              onMarkerCardClick={handleOpenMarkerDetail}
+              ownedSetIds={ownedSetIds}
+              favoriteMarkerIds={favoriteMarkerIds}
+              onToggleFavorite={toggleFavoriteMarker}
+            />
+          </>
+        );
       case 'explorer':
         return <div className="p-4 md:p-6 max-w-2xl mx-auto">
                  <ColorExplorer 
@@ -369,14 +411,23 @@ export default function OhuhuHarmonyPage() {
       case 'sets':
         return <ManageSetsPage onViewSetActive={handleNavigateToPaletteWithSetFilter} />;
       default:
-        return <MarkerGrid
-                  markers={displayedMarkers}
-                  markerSets={markerSets}
-                  onMarkerCardClick={handleOpenMarkerDetail}
-                  ownedSetIds={ownedSetIds}
-                  favoriteMarkerIds={favoriteMarkerIds}
-                  onToggleFavorite={toggleFavoriteMarker}
-                />;
+        return (
+           <>
+            <div className="px-2 md:px-3 pt-3">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                {getPaletteTitle()}
+              </h3>
+            </div>
+            <MarkerGrid
+              markers={displayedMarkers}
+              markerSets={markerSets}
+              onMarkerCardClick={handleOpenMarkerDetail}
+              ownedSetIds={ownedSetIds}
+              favoriteMarkerIds={favoriteMarkerIds}
+              onToggleFavorite={toggleFavoriteMarker}
+            />
+          </>
+        );
     }
   };
 
