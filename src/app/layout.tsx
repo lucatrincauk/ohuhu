@@ -1,15 +1,15 @@
 
 "use client"; // Add this directive
 
-import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { MarkerDataProvider } from '@/contexts/marker-data-context';
-import { SidebarProvider } from '@/components/ui/sidebar'; // Corrected import path
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { useEffect } from 'react';
 
+// Define constants for Geist fonts
 const geistSans = GeistSans;
 const geistMono = GeistMono;
 
@@ -48,7 +48,7 @@ export default function RootLayout({
   }, []);
 
   return (
-    <html lang="en" suppressHydrationWarning> {/* Added suppressHydrationWarning for theme persistence */}
+    <html lang="en" suppressHydrationWarning={true}>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <MarkerDataProvider>
           <SidebarProvider defaultOpen={true}>
