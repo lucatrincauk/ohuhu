@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from 'react'; 
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Sidebar,
@@ -10,19 +10,19 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
-  useSidebar,
+  useSidebar, // SidebarProvider should NOT be imported here
 } from '@/components/ui/sidebar';
 import { AppLogo } from '@/components/core/app-logo';
 import { MarkerGrid } from '@/components/markers/marker-grid';
 import { ColorExplorer } from '@/components/tools/color-explorer';
 import { ManageSetsPage } from '@/components/profile/manage-sets';
-import { ManagePalettesPage } from '@/components/palettes/manage-palettes'; // Renamed from ManageGroupsPage
+import { ManagePalettesPage } from '@/components/palettes/manage-palettes';
 import { useMarkerData } from '@/hooks/use-marker-data';
-import type { Marker, MarkerSet } from '@/lib/types';
+import type { Marker, MarkerSet, MarkerPalette } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon, PlusCircle, SwatchBook } from 'lucide-react'; // Added SwatchBook, removed Users
+import { Menu, Search, Tags, LayoutGrid, ChevronDown, Library, Compass, ListFilter, SortAsc, Heart as HeartIcon, PlusCircle, SwatchBook } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
@@ -45,11 +45,11 @@ import { ThemeToggleInSidebar } from '@/components/core/theme-toggle';
 
 const PALETTE_FILTER_SET_ID_KEY = 'ohuhuHarmony_paletteFilterSetId';
 const PALETTE_FILTER_COLOR_CATEGORY_KEY = 'ohuhuHarmony_paletteFilterColorCategory';
-const PALETTE_FILTER_PALETTE_ID_KEY = 'ohuhuHarmony_paletteFilterPaletteId'; // Renamed from PALETTE_FILTER_GROUP_ID_KEY
+const PALETTE_FILTER_PALETTE_ID_KEY = 'ohuhuHarmony_paletteFilterPaletteId';
 const PALETTE_SORT_ORDER_KEY = 'ohuhuHarmony_paletteSortOrder';
 
 
-type ActivePageContentType = 'palette' | 'explorer' | 'sets' | 'palettes'; // Renamed 'groups' to 'palettes'
+type ActivePageContentType = 'palette' | 'explorer' | 'sets' | 'palettes';
 type SortOrder = 'hue' | 'id' | 'name';
 type SetFilterValue = string | null | '__owned__' | '__missing__' | '__favorites__';
 
@@ -86,7 +86,7 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
   const l = (max + min) / 2;
 
   if (max === min) {
-    h = s = 0; 
+    h = s = 0;
   } else {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -107,49 +107,49 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
 
   const { r: mr, g: mg, b: mb } = markerRgb;
   const markerHsl = rgbToHsl(mr, mg, mb);
-  
-  const sThresholdChromatic = 0.10; 
-  const sThresholdGrey = 0.20;    
 
-  if (categoryHex === "#000000") { 
+  const sThresholdChromatic = 0.10;
+  const sThresholdGrey = 0.20;
+
+  if (categoryHex === "#000000") {
     return markerHsl.l < 0.20 && markerHsl.s < sThresholdGrey;
   }
-  if (categoryHex === "#FFFFFF") { 
+  if (categoryHex === "#FFFFFF") {
     return markerHsl.l > 0.90 && markerHsl.s < sThresholdGrey;
   }
-  if (categoryHex === "#808080") { 
+  if (categoryHex === "#808080") {
     return markerHsl.s < sThresholdGrey && (markerHsl.l >= 0.20 && markerHsl.l <= 0.90);
   }
 
-  if (categoryHex === "#FF0000") { 
-    return (markerHsl.h >= 330 || markerHsl.h <= 25) && markerHsl.s >= sThresholdChromatic; 
+  if (categoryHex === "#FF0000") {
+    return (markerHsl.h >= 330 || markerHsl.h <= 25) && markerHsl.s >= sThresholdChromatic;
   }
-  if (categoryHex === "#FFA500") { 
-    return (markerHsl.h > 20 && markerHsl.h <= 50) && markerHsl.s >= sThresholdChromatic; 
+  if (categoryHex === "#FFA500") {
+    return (markerHsl.h > 20 && markerHsl.h <= 50) && markerHsl.s >= sThresholdChromatic;
   }
-  if (categoryHex === "#FFFF00") { 
-    return (markerHsl.h > 48 && markerHsl.h <= 72) && markerHsl.s >= sThresholdChromatic;  
+  if (categoryHex === "#FFFF00") {
+    return (markerHsl.h > 48 && markerHsl.h <= 72) && markerHsl.s >= sThresholdChromatic;
   }
-  if (categoryHex === "#008000") { 
-    return (markerHsl.h > 70 && markerHsl.h <= 165) && markerHsl.s >= sThresholdChromatic; 
+  if (categoryHex === "#008000") {
+    return (markerHsl.h > 70 && markerHsl.h <= 165) && markerHsl.s >= sThresholdChromatic;
   }
-  if (categoryHex === "#0000FF") { 
-    return (markerHsl.h > 160 && markerHsl.h <= 265) && markerHsl.s >= sThresholdChromatic; 
+  if (categoryHex === "#0000FF") {
+    return (markerHsl.h > 160 && markerHsl.h <= 265) && markerHsl.s >= sThresholdChromatic;
   }
-  if (categoryHex === "#800080") { 
-    return (markerHsl.h > 260 && markerHsl.h < 340) && markerHsl.s >= sThresholdChromatic; 
+  if (categoryHex === "#800080") {
+    return (markerHsl.h > 260 && markerHsl.h < 340) && markerHsl.s >= sThresholdChromatic;
   }
-  if (categoryHex === "#FFC0CB") { 
+  if (categoryHex === "#FFC0CB") {
     return (
-        ( (markerHsl.h >= 320 || markerHsl.h <= 20) && markerHsl.l >= 0.55 ) || 
-        ( markerHsl.h >= 295 && markerHsl.h < 335 && markerHsl.l >= 0.50 )  
+        ( (markerHsl.h >= 320 || markerHsl.h <= 20) && markerHsl.l >= 0.55 ) ||
+        ( markerHsl.h >= 295 && markerHsl.h < 335 && markerHsl.l >= 0.50 )
     ) && markerHsl.s >= sThresholdChromatic;
   }
-  if (categoryHex === "#A52A2A") { 
+  if (categoryHex === "#A52A2A") {
     return (
-      (markerHsl.h >= 8 && markerHsl.h <= 55) && 
-      markerHsl.s >= 0.05 && markerHsl.s <= 0.75 && 
-      markerHsl.l >= 0.08 && markerHsl.l <= 0.65   
+      (markerHsl.h >= 8 && markerHsl.h <= 55) &&
+      markerHsl.s >= 0.05 && markerHsl.s <= 0.75 &&
+      markerHsl.l >= 0.08 && markerHsl.l <= 0.65
     );
   }
 
@@ -157,13 +157,13 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
 }
 
 function AppContent() {
-  const { markers: allMarkers, markerSets, isInitialized, ownedSetIds, getMarkerById, favoriteMarkerIds, toggleFavoriteMarker, markerPalettes } = useMarkerData(); // Renamed markerGroups to markerPalettes
+  const { markers: allMarkers, markerSets, isInitialized, ownedSetIds, getMarkerById, favoriteMarkerIds, toggleFavoriteMarker, markerPalettes } = useMarkerData();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isMobile, setOpenMobile } = useSidebar(); 
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const [displayedMarkers, setDisplayedMarkers] = useState<Marker[]>([]);
-  
+
   const [selectedSetId, setSelectedSetId] = useState<SetFilterValue>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(PALETTE_FILTER_SET_ID_KEY);
@@ -187,9 +187,9 @@ function AppContent() {
     return null;
   });
 
-  const [selectedPaletteId, setSelectedPaletteId] = useState<string | null>(() => { // Renamed from selectedGroupId
+  const [selectedPaletteId, setSelectedPaletteId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(PALETTE_FILTER_PALETTE_ID_KEY) || null; // Renamed Key
+      return localStorage.getItem(PALETTE_FILTER_PALETTE_ID_KEY) || null;
     }
     return null;
   });
@@ -231,7 +231,7 @@ function AppContent() {
         newSelectedSetId = queryFilterSetId;
         newActivePage = 'palette';
     }
-    
+
     if (newActivePage !== activePageContent) setActivePageContent(newActivePage);
     if (newSelectedSetId !== selectedSetId) setSelectedSetId(newSelectedSetId);
     if (newSelectedMarkerForExplorer !== selectedMarkerForExplorer) setSelectedMarkerForExplorer(newSelectedMarkerForExplorer);
@@ -257,7 +257,7 @@ function AppContent() {
 
     if (selectedSetId === '__owned__') {
       if (ownedSetIds.length === 0) {
-        tempResults = []; 
+        tempResults = [];
       } else {
         tempResults = tempResults.filter(marker => marker.setIds.some(sid => ownedSetIds.includes(sid)));
       }
@@ -268,16 +268,16 @@ function AppContent() {
       }
     } else if (selectedSetId === '__favorites__') {
         tempResults = tempResults.filter(marker => favoriteMarkerIds.includes(marker.id));
-    } else if (selectedSetId) { 
+    } else if (selectedSetId) {
       tempResults = tempResults.filter(marker => marker.setIds.includes(selectedSetId));
     }
-    
-    if (selectedPaletteId) { // Renamed from selectedGroupId
-      const palette = markerPalettes.find(p => p.id === selectedPaletteId); // Renamed
+
+    if (selectedPaletteId) {
+      const palette = markerPalettes.find(p => p.id === selectedPaletteId);
       if (palette) {
         tempResults = tempResults.filter(marker => palette.markerIds.includes(marker.id));
       } else {
-        tempResults = []; 
+        tempResults = [];
       }
     }
 
@@ -300,10 +300,10 @@ function AppContent() {
     if (sortOrder === 'hue') {
       const hexCodesWithNulls = tempResults.map(marker => marker.hex);
       const validHexCodes = hexCodesWithNulls.filter(hex => hex && hex.startsWith('#')) as string[];
-      
+
       try {
           const sortedHexCodes = sort(validHexCodes);
-          
+
           const markerMap = new Map<string, Marker[]>();
           tempResults.forEach(marker => {
             if (marker.hex) {
@@ -312,9 +312,9 @@ function AppContent() {
               markerMap.set(marker.hex, existing);
             }
           });
-          
+
           const sortedMarkers: Marker[] = [];
-          const usedMarkers = new Set<string>(); 
+          const usedMarkers = new Set<string>();
 
           sortedHexCodes.forEach(hex => {
             const markersWithThisHex = markerMap.get(hex);
@@ -327,10 +327,10 @@ function AppContent() {
               });
             }
           });
-          
+
           tempResults.forEach(marker => {
             if (!usedMarkers.has(marker.id)) {
-              sortedMarkers.push(marker); 
+              sortedMarkers.push(marker);
             }
           });
           tempResults = sortedMarkers;
@@ -346,7 +346,7 @@ function AppContent() {
 
     setDisplayedMarkers(tempResults);
 
-  }, [searchTerm, selectedColorCategory, selectedSetId, selectedPaletteId, allMarkers, isInitialized, activePageContent, sortOrder, ownedSetIds, favoriteMarkerIds, markerPalettes]); // Renamed selectedGroupId, markerGroups
+  }, [searchTerm, selectedColorCategory, selectedSetId, selectedPaletteId, allMarkers, isInitialized, activePageContent, sortOrder, ownedSetIds, favoriteMarkerIds, markerPalettes]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -370,13 +370,13 @@ function AppContent() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      if (selectedPaletteId === null) { // Renamed
-        localStorage.removeItem(PALETTE_FILTER_PALETTE_ID_KEY); // Renamed
+      if (selectedPaletteId === null) {
+        localStorage.removeItem(PALETTE_FILTER_PALETTE_ID_KEY);
       } else {
-        localStorage.setItem(PALETTE_FILTER_PALETTE_ID_KEY, selectedPaletteId); // Renamed
+        localStorage.setItem(PALETTE_FILTER_PALETTE_ID_KEY, selectedPaletteId);
       }
     }
-  }, [selectedPaletteId]); // Renamed
+  }, [selectedPaletteId]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -389,13 +389,13 @@ function AppContent() {
     setSelectedSetId(setId);
   };
 
-  const handlePaletteFilterChange = (paletteId: string | null) => { // Renamed from handleGroupFilterChange
-    setSelectedPaletteId(paletteId); // Renamed
+  const handlePaletteFilterChange = (paletteId: string | null) => {
+    setSelectedPaletteId(paletteId);
   };
 
   const handleColorCategorySelect = (category: { name: string; hex: string } | null) => {
     if (selectedColorCategory?.name === category?.name) {
-      setSelectedColorCategory(null); 
+      setSelectedColorCategory(null);
     } else {
       setSelectedColorCategory(category);
     }
@@ -408,15 +408,15 @@ function AppContent() {
   const handleNavigateToPaletteWithSetFilter = (setId: string) => {
     setActivePageContent('palette');
     setSelectedSetId(setId);
-    setSelectedColorCategory(null); 
-    setSearchTerm(''); 
-    setSelectedPaletteId(null); // Renamed
+    setSelectedColorCategory(null);
+    setSearchTerm('');
+    setSelectedPaletteId(null);
     if (isMobile) setOpenMobile(false);
   };
 
   const handleOpenMarkerDetail = (marker: Marker) => {
     router.push(`/marker/${marker.id}`);
-    if (isMobile) setOpenMobile(false); 
+    if (isMobile) setOpenMobile(false);
   };
 
   if (!isInitialized) {
@@ -430,7 +430,7 @@ function AppContent() {
   const isPaletteView = activePageContent === 'palette';
 
   const getPaletteTitle = () => {
-    let title = "All Markers"; 
+    let title = "All Markers";
 
     if (selectedSetId === '__favorites__') {
       title = "Favorite Markers";
@@ -443,26 +443,26 @@ function AppContent() {
       title = set ? `${set.name} Markers` : "Selected Set Markers";
     }
 
-    if (selectedPaletteId) { // Renamed
-      const palette = markerPalettes.find(p => p.id === selectedPaletteId); // Renamed
+    if (selectedPaletteId) {
+      const palette = markerPalettes.find(p => p.id === selectedPaletteId);
       if (palette) {
         if (title === "All Markers") {
-          title = `Markers in "${palette.name}" Palette`; // Renamed
+          title = `Markers in "${palette.name}" Palette`;
         } else {
-          title += ` (in "${palette.name}" Palette)`; // Renamed
+          title += ` (in "${palette.name}" Palette)`;
         }
       }
     }
-    
+
     if (selectedColorCategory) {
-      if (title === "All Markers" && !selectedPaletteId) { // Renamed
+      if (title === "All Markers" && !selectedPaletteId) {
         title = `${selectedColorCategory.name} Markers`;
       } else {
         const parts = title.split(" Markers");
-        if (parts.length > 1 && parts[0].trim() !== "" && !title.includes("Palette")) { // Renamed
+        if (parts.length > 1 && parts[0].trim() !== "" && !title.includes("Palette")) {
            title = `${parts[0].trim()} ${selectedColorCategory.name} Markers`;
-        } else if (title.includes("Palette")) { // Renamed
-           title = title.replace(/ Palette/, ` ${selectedColorCategory.name} Palette`); // Renamed
+        } else if (title.includes("Palette")) {
+           title = title.replace(/ Palette/, ` ${selectedColorCategory.name} Palette`);
         } else {
            title = `${selectedColorCategory.name} Markers`;
         }
@@ -470,9 +470,9 @@ function AppContent() {
     }
 
     if (searchTerm.trim() !== '') {
-      if (title === "All Markers" && !selectedColorCategory && !selectedPaletteId && !(selectedSetId && selectedSetId !== '__favorites__' && selectedSetId !== '__owned__' && selectedSetId !== '__missing__')) { // Renamed
+      if (title === "All Markers" && !selectedColorCategory && !selectedPaletteId && !(selectedSetId && selectedSetId !== '__favorites__' && selectedSetId !== '__owned__' && selectedSetId !== '__missing__')) {
         title = `Search results for "${searchTerm.trim()}"`;
-      } else { 
+      } else {
         title += ` (matching "${searchTerm.trim()}")`;
       }
     }
@@ -505,16 +505,16 @@ function AppContent() {
         );
       case 'explorer':
         return <div className="p-4 md:p-6 max-w-2xl mx-auto">
-                 <ColorExplorer 
-                    inventory={allMarkers} 
+                 <ColorExplorer
+                    inventory={allMarkers}
                     initialSelectedMarker={selectedMarkerForExplorer}
                     onClearSelectedMarker={clearSelectedMarkerForExplorer}
                   />
                </div>;
       case 'sets':
         return <ManageSetsPage onViewSetActive={handleNavigateToPaletteWithSetFilter} />;
-      case 'palettes': // Renamed
-        return <ManagePalettesPage />; // Renamed
+      case 'palettes':
+        return <ManagePalettesPage />;
       default:
         return (
            <>
@@ -546,7 +546,7 @@ function AppContent() {
     action: () => void;
     type: 'main' | 'navigation';
   }
-  
+
   const createSidebarAction = (page: ActivePageContentType, clearExplorer: boolean = true) => {
     return () => {
       setActivePageContent(page);
@@ -560,14 +560,14 @@ function AppContent() {
     { id: 'view_palette', name: "My Markers", Icon: LayoutGrid, type: 'navigation', action: createSidebarAction('palette')},
     { id: 'explorer', name: "Color Explorer", Icon: Compass, type: 'main', action: createSidebarAction('explorer', false) },
     { id: 'sets', name: "My Sets", Icon: Library, type: 'main', action: createSidebarAction('sets')},
-    { id: 'palettes', name: "My Palettes", Icon: SwatchBook, type: 'main', action: createSidebarAction('palettes')}, // Renamed, new Icon
+    { id: 'palettes', name: "My Palettes", Icon: SwatchBook, type: 'main', action: createSidebarAction('palettes')},
   ];
 
   const getHeaderTitle = () => {
     if (activePageContent === 'palette') return "My Markers";
     if (activePageContent === 'sets') return "My Sets";
     if (activePageContent === 'explorer') return "Color Explorer";
-    if (activePageContent === 'palettes') return "My Marker Palettes"; // Renamed
+    if (activePageContent === 'palettes') return "My Marker Palettes";
     const activeButton = sidebarButtons.find(btn => btn.id === activePageContent);
     return activeButton ? activeButton.name : "Ohuhu Harmony";
   };
@@ -596,12 +596,12 @@ function AppContent() {
     return "Filter Set";
   };
 
-  const getPaletteFilterLabel = () => { // Renamed from getGroupFilterLabel
-    if (selectedPaletteId) { // Renamed
-      const palette = markerPalettes.find(p => p.id === selectedPaletteId); // Renamed
-      return `Palette: ${palette ? palette.name : 'Unknown'}`; // Renamed
+  const getPaletteFilterLabel = () => {
+    if (selectedPaletteId) {
+      const palette = markerPalettes.find(p => p.id === selectedPaletteId);
+      return `Palette: ${palette ? palette.name : 'Unknown'}`;
     }
-    return "Filter Palette"; // Renamed
+    return "Filter Palette";
   };
 
 
@@ -763,34 +763,34 @@ function AppContent() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant={selectedPaletteId ? "secondary" : "outline"} size="sm" className="h-8 gap-1" disabled={markerPalettes.length === 0}> {/* Renamed, new Icon */}
-                      <SwatchBook className="h-3.5 w-3.5" /> {/* Renamed Icon */}
+                    <Button variant={selectedPaletteId ? "secondary" : "outline"} size="sm" className="h-8 gap-1" disabled={markerPalettes.length === 0}>
+                      <SwatchBook className="h-3.5 w-3.5" />
                       <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        {getPaletteFilterLabel()} {/* Renamed */}
+                        {getPaletteFilterLabel()}
                       </span>
                       <ChevronDown className="h-3.5 w-3.5 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuLabel>Filter by marker palette</DropdownMenuLabel> {/* Renamed */}
+                    <DropdownMenuLabel>Filter by marker palette</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuCheckboxItem
-                      checked={selectedPaletteId === null} // Renamed
+                      checked={selectedPaletteId === null}
                       onSelect={(event) => {
                         event.preventDefault();
-                        handlePaletteFilterChange(null); // Renamed
+                        handlePaletteFilterChange(null);
                       }}
                     >
-                      All Markers (No Palette Filter) {/* Renamed */}
+                      All Markers (No Palette Filter)
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuSeparator />
-                    {markerPalettes.map((palette) => ( // Renamed
+                    {markerPalettes.map((palette) => (
                       <DropdownMenuCheckboxItem
                         key={palette.id}
-                        checked={selectedPaletteId === palette.id} // Renamed
+                        checked={selectedPaletteId === palette.id}
                         onSelect={(event) => {
                           event.preventDefault();
-                          handlePaletteFilterChange(selectedPaletteId === palette.id ? null : palette.id); // Renamed
+                          handlePaletteFilterChange(selectedPaletteId === palette.id ? null : palette.id);
                         }}
                       >
                         {palette.name}
@@ -799,12 +799,12 @@ function AppContent() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onSelect={() => {
-                        setActivePageContent('palettes'); // Renamed
+                        setActivePageContent('palettes');
                         if (isMobile) setOpenMobile(false);
                       }}
                     >
                       <PlusCircle className="mr-2 h-3.5 w-3.5" />
-                      Create New Palette... {/* Renamed */}
+                      Create New Palette...
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -859,9 +859,7 @@ export default function OhuhuHarmonyPage() {
         <p className="ml-4 text-xl text-foreground">Loading page data...</p>
       </div>
     }>
-      <SidebarProvider defaultOpen={true}>
-        <AppContent />
-      </SidebarProvider>
+      <AppContent />
     </Suspense>
   );
 }
