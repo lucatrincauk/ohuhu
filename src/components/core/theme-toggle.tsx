@@ -19,9 +19,9 @@ export function ThemeToggleInSidebar() {
   const { theme, setTheme } = useTheme();
 
   const themeLabels: Record<Theme, string> = {
-    light: 'Light',
-    dark: 'Dark',
-    system: 'System',
+    light: 'Light Theme',
+    dark: 'Dark Theme',
+    system: 'System Theme',
   };
 
   return (
@@ -44,15 +44,15 @@ export function ThemeToggleInSidebar() {
         <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)}>
           <DropdownMenuRadioItem value="light">
             <Sun className="mr-2 h-4 w-4" />
-            <span>Light</span>
+            <span>Light Theme</span>
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="dark">
             <Moon className="mr-2 h-4 w-4" />
-            <span>Dark</span>
+            <span>Dark Theme</span>
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="system">
             <Laptop className="mr-2 h-4 w-4" />
-            <span>System</span>
+            <span>System Theme</span>
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
