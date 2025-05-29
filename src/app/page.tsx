@@ -167,11 +167,10 @@ export default function OhuhuHarmonyPage() {
   const [selectedSetId, setSelectedSetId] = useState<SetFilterValue>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(PALETTE_FILTER_SET_ID_KEY);
-      // Ensure __owned__, __missing__, __favorites__ are valid, or specific string IDs, or null
       if (stored === null || stored === '__owned__' || stored === '__missing__' || stored === '__favorites__') {
         return stored as SetFilterValue;
       }
-      if (typeof stored === 'string' && stored.length > 0) return stored; // specific set ID
+      if (typeof stored === 'string' && stored.length > 0) return stored;
     }
     return null;
   });
@@ -446,10 +445,13 @@ export default function OhuhuHarmonyPage() {
       case 'palette':
         return (
           <>
-            <div className="px-2 md:px-3 pt-3">
-              <h3 className="text-lg font-semibold text-foreground mb-2">
+            <div className="flex items-baseline gap-x-2 px-2 md:px-3 pt-3 mb-2">
+              <h3 className="text-lg font-semibold text-foreground">
                 {getPaletteTitle()}
               </h3>
+              <span className="text-sm text-muted-foreground">
+                ({displayedMarkers.length} marker{displayedMarkers.length === 1 ? '' : 's'})
+              </span>
             </div>
             <MarkerGrid
               markers={displayedMarkers}
@@ -474,10 +476,13 @@ export default function OhuhuHarmonyPage() {
       default:
         return (
            <>
-            <div className="px-2 md:px-3 pt-3">
-              <h3 className="text-lg font-semibold text-foreground mb-2">
+            <div className="flex items-baseline gap-x-2 px-2 md:px-3 pt-3 mb-2">
+              <h3 className="text-lg font-semibold text-foreground">
                 {getPaletteTitle()}
               </h3>
+              <span className="text-sm text-muted-foreground">
+                ({displayedMarkers.length} marker{displayedMarkers.length === 1 ? '' : 's'})
+              </span>
             </div>
             <MarkerGrid
               markers={displayedMarkers}
@@ -581,9 +586,6 @@ export default function OhuhuHarmonyPage() {
               <SidebarTrigger className="md:hidden mr-2" />
               <div className="flex items-center">
                 <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">{getHeaderTitle()}</h2>
-                {isPaletteView && (
-                  <span className="ml-2 text-sm text-muted-foreground">({displayedMarkers.length} marker{displayedMarkers.length === 1 ? '' : 's'})</span>
-                )}
               </div>
             </div>
 
