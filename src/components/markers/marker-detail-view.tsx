@@ -12,7 +12,7 @@ import {
   DialogClose,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge'; // Import Badge
+import { Badge } from '@/components/ui/badge';
 import { Compass } from 'lucide-react';
 
 interface MarkerDetailViewProps {
@@ -34,7 +34,8 @@ export function MarkerDetailView({ marker, markerSets, isOpen, onClose, onExplor
 
   const handleExploreClick = () => {
     onExplore(marker);
-    // onClose will be called by onExplore if navigation happens
+    // onClose will be called by onExplore if navigation happens (e.g., page change)
+    // If ColorExplorer opens as a modal/part of the same page, onClose might be called explicitly in onExplore
   };
 
   return (
@@ -65,12 +66,15 @@ export function MarkerDetailView({ marker, markerSets, isOpen, onClose, onExplor
           </div>
         </div>
 
-        <DialogFooter className="p-6 pt-0 border-t mt-4">
+        {/* Added mt-4 here for margin above buttons on all screens */}
+        {/* Added gap-2 for mobile (stacked) button spacing */}
+        <DialogFooter className="p-6 pt-0 border-t mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:space-x-2">
           <Button variant="outline" onClick={handleExploreClick} className="w-full sm:w-auto">
             <Compass className="mr-2 h-4 w-4" />
             Explore in Color Explorer
           </Button>
           <DialogClose asChild>
+            {/* Added mt-2 for mobile stacking, sm:mt-0 for desktop row */}
             <Button type="button" variant="secondary" className="w-full sm:w-auto mt-2 sm:mt-0">Close</Button>
           </DialogClose>
         </DialogFooter>
