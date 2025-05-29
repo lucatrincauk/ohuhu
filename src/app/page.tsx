@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from 'react'; // Added Suspense
+import { useState, useEffect, Suspense } from 'react'; 
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Sidebar,
@@ -41,6 +41,7 @@ import {
 import { ColorSwatch } from '@/components/core/color-swatch';
 import { cn } from '@/lib/utils';
 import { sort } from 'color-sorter';
+import { ThemeToggleInSidebar } from '@/components/core/theme-toggle'; // Import the new ThemeToggle component
 
 const PALETTE_FILTER_SET_ID_KEY = 'ohuhuHarmony_paletteFilterSetId';
 const PALETTE_FILTER_COLOR_CATEGORY_KEY = 'ohuhuHarmony_paletteFilterColorCategory';
@@ -640,8 +641,11 @@ function AppContent() {
                   <span className="group-data-[collapsible=icon]:hidden">{button.name}</span>
                 </Button>
               ))}
+               <Separator className="my-4 group-data-[collapsible=icon]:hidden" />
+               <div className="group-data-[collapsible=icon]:px-0"> {/* Wrapper for ThemeToggle */}
+                 <ThemeToggleInSidebar />
+               </div>
             </div>
-            <Separator className="my-4 group-data-[collapsible=icon]:hidden" />
           </ScrollArea>
         </SidebarContent>
         <SidebarFooter className="p-4 border-t group-data-[collapsible=icon]:hidden">
