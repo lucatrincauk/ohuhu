@@ -20,5 +20,5 @@ export type MarkerInventoryItem = {
 export interface MarkerPalette { // Renamed from MarkerGroup
   id: string;
   name: string;
-  markerIds: string[]; // IDs of the markers belonging to this palette
+  markerIds: string[]; // IDs of the markers belonging to this palette. A single marker can belong to multiple palettes.
 }
