@@ -16,7 +16,7 @@ import { AppLogo } from '@/components/core/app-logo';
 import { MarkerGrid } from '@/components/markers/marker-grid';
 import { ColorExplorer } from '@/components/tools/color-explorer';
 import { ManageSetsPage } from '@/components/profile/manage-sets';
-import { ManagePalettesPage } from '@/components/palettes/manage-palettes'; // Changed from groups
+import { ManagePalettesPage } from '@/components/palettes/manage-palettes';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import type { Marker, MarkerSet, MarkerPalette } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
@@ -45,7 +45,7 @@ import { ThemeToggleInSidebar } from '@/components/core/theme-toggle';
 
 const PALETTE_FILTER_SET_ID_KEY = 'ohuhuHarmony_paletteFilterSetId';
 const PALETTE_FILTER_COLOR_CATEGORY_KEY = 'ohuhuHarmony_paletteFilterColorCategory';
-const PALETTE_FILTER_PALETTE_ID_KEY = 'ohuhuHarmony_paletteFilterPaletteId'; // Changed from GROUP to PALETTE
+const PALETTE_FILTER_PALETTE_ID_KEY = 'ohuhuHarmony_paletteFilterPaletteId';
 const PALETTE_SORT_ORDER_KEY = 'ohuhuHarmony_paletteSortOrder';
 
 
@@ -157,6 +157,34 @@ function isColorInCategory(markerHex: string, categoryHex: string): boolean {
   return false;
 }
 
+// Helper function for natural sorting of marker IDs
+function parseIdParts(id: string) {
+  const idStr = String(id || "");
+  const letterMatch = idStr.match(/^([A-Za-z_]*)/);
+  const prefix = letterMatch ? letterMatch[1].toUpperCase() : "";
+
+  const numberMatch = idStr.match(/(\d*\.?\d+)$/);
+  let numberVal: number | null = null;
+
+  if (numberMatch && numberMatch[1]) {
+    // Check if the numeric part is the entire string after the prefix
+    if (prefix + numberMatch[1] === idStr) {
+      numberVal = parseFloat(numberMatch[1]);
+    }
+  }
+  
+  if (numberVal === null && /^\d*\.?\d+$/.test(idStr) && prefix === "") {
+     numberVal = parseFloat(idStr);
+  }
+
+  if (numberVal === null || isNaN(numberVal)) {
+      return { prefix: prefix || idStr.toUpperCase(), number: null, original: idStr };
+  }
+
+  return { prefix, number: numberVal, original: idStr };
+}
+
+
 function AppContent() {
   const { markers: allMarkers, markerSets, isInitialized, ownedSetIds, getMarkerById, favoriteMarkerIds, toggleFavoriteMarker, markerPalettes } = useMarkerData();
   const router = useRouter();
@@ -233,22 +261,28 @@ function AppContent() {
       }
     } else if ((newActivePage === 'palette' || !queryActivePage) && queryFilterSetId) {
         newSelectedSetId = queryFilterSetId;
-        newSelectedPaletteId = null;
-        newSelectedColorCategory = null;
-        newSearchTerm = '';
+        newSelectedPaletteId = null; // Reset palette filter
+        newSelectedColorCategory = null; // Reset color category
+        newSearchTerm = ''; // Reset search term
     } else if ((newActivePage === 'palette' || !queryActivePage) && queryFilterPaletteId) {
         newSelectedPaletteId = queryFilterPaletteId;
-        newSelectedSetId = null;
-        newSelectedColorCategory = null;
-        newSearchTerm = '';
+        newSelectedSetId = null; // Reset set filter
+        newSelectedColorCategory = null; // Reset color category
+        newSearchTerm = ''; // Reset search term
     }
 
     if (newActivePage !== activePageContent) setActivePageContent(newActivePage);
     if (newSelectedSetId !== selectedSetId) setSelectedSetId(newSelectedSetId);
     if (newSelectedPaletteId !== selectedPaletteId) setSelectedPaletteId(newSelectedPaletteId);
     if (newSelectedMarkerForExplorer !== selectedMarkerForExplorer) setSelectedMarkerForExplorer(newSelectedMarkerForExplorer);
-    if (newSelectedColorCategory !== selectedColorCategory && (queryFilterSetId || queryFilterPaletteId)) setSelectedColorCategory(newSelectedColorCategory);
-    if (newSearchTerm !== searchTerm && (queryFilterSetId || queryFilterPaletteId)) setSearchTerm(newSearchTerm);
+    
+    // Only reset these if a primary filter (set or palette) was applied via URL
+    if ((queryFilterSetId && newSelectedColorCategory !== null) || (queryFilterPaletteId && newSelectedColorCategory !== null)) {
+        setSelectedColorCategory(null);
+    }
+     if ((queryFilterSetId && newSearchTerm !== '') || (queryFilterPaletteId && newSearchTerm !== '')) {
+        setSearchTerm('');
+    }
 
 
     if (queryActivePage || queryExploreMarkerId || queryFilterSetId || queryFilterPaletteId) {
@@ -262,9 +296,8 @@ function AppContent() {
         router.replace(`${window.location.pathname}${query}`, { scroll: false });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, getMarkerById, router]); // Removed internal states from deps to avoid re-trigger loops
+  }, [searchParams, getMarkerById, router]);
 
-  // Effect to reset selectedPaletteId if the palette gets deleted
   useEffect(() => {
     if (selectedPaletteId && markerPalettes && !markerPalettes.find(p => p.id === selectedPaletteId)) {
       setSelectedPaletteId(null);
@@ -359,7 +392,22 @@ function AppContent() {
         return results;
       }
     } else if (sortOrder === 'id') {
-      results.sort((a, b) => a.id.localeCompare(b.id));
+      results.sort((a, b) => {
+        const partsA = parseIdParts(a.id);
+        const partsB = parseIdParts(b.id);
+
+        if (partsA.prefix < partsB.prefix) return -1;
+        if (partsA.prefix > partsB.prefix) return 1;
+
+        if (partsA.number !== null && partsB.number !== null) {
+          return partsA.number - partsB.number;
+        } else if (partsA.number === null && partsB.number !== null) {
+          return -1; 
+        } else if (partsA.number !== null && partsB.number === null) {
+          return 1;  
+        }
+        return partsA.original.localeCompare(partsB.original);
+      });
     } else if (sortOrder === 'name') {
       results.sort((a, b) => a.name.localeCompare(b.name));
     }
@@ -800,7 +848,7 @@ function AppContent() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant={selectedPaletteId ? "secondary" : "outline"} size="sm" className="h-8 gap-1">
+                     <Button variant={selectedPaletteId ? "secondary" : "outline"} size="sm" className="h-8 gap-1">
                       <SwatchBook className="h-3.5 w-3.5" />
                       <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                         {getPaletteFilterLabel()}
@@ -909,3 +957,5 @@ export default function OhuhuHarmonyPage() {
     </Suspense>
   );
 }
+
+    
