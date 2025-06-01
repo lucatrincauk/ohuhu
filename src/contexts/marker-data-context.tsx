@@ -24,7 +24,7 @@ export interface MarkerDataContextType {
   addMarkerSet: (newSet: Omit<MarkerSet, 'id'> & { id?: string }) => void;
   updateOwnedSetIds: (newOwnedSetIds: string[]) => void;
   toggleFavoriteMarker: (markerId: string) => void;
-  createMarkerPalette: (name: string) => void;
+  createMarkerPalette: (name: string) => string; // Changed to return string (palette ID)
   addMarkerToPalette: (paletteId: string, markerId: string) => void;
   removeMarkerFromPalette: (paletteId: string, markerId: string) => void;
   getPalettesForMarker: (markerId: string) => MarkerPalette[];
@@ -134,7 +134,7 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
     });
   }, [updateLocalStorage]);
 
-  const createMarkerPalette = useCallback((name: string) => {
+  const createMarkerPalette = useCallback((name: string): string => {
     const newPalette: MarkerPalette = {
       id: `palette-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       name,
@@ -145,6 +145,7 @@ export const MarkerDataProvider: React.FC<{ children: ReactNode }> = ({ children
       updateLocalStorage(MARKER_PALETTES_STORAGE_KEY, updatedPalettes);
       return updatedPalettes;
     });
+    return newPalette.id;
   }, [updateLocalStorage]);
 
   const addMarkerToPalette = useCallback((paletteId: string, markerId: string) => {

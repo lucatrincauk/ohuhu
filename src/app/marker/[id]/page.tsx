@@ -12,7 +12,7 @@ import type { Marker, MarkerSet, MarkerPalette } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -25,6 +25,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from '@/components/ui/input';
 
 
 export default function MarkerDetailPage() {
@@ -40,6 +50,7 @@ export default function MarkerDetailPage() {
     addMarkerToPalette,
     removeMarkerFromPalette,
     getPalettesForMarker,
+    createMarkerPalette,
   } = useMarkerData();
   const { toast } = useToast();
 
@@ -47,6 +58,8 @@ export default function MarkerDetailPage() {
   const marker = getMarkerById(markerId);
 
   const [selectedPaletteId, setSelectedPaletteId] = useState<string>('');
+  const [isCreatePaletteDialogOpen, setIsCreatePaletteDialogOpen] = useState(false);
+  const [newPaletteNameInput, setNewPaletteNameInput] = useState('');
 
   useEffect(() => {
     if (isInitialized && !marker) {
@@ -84,8 +97,7 @@ export default function MarkerDetailPage() {
 
   const belongingMarkerPalettes = getPalettesForMarker(marker.id);
   
-  // Determine if the marker is already in the currently selected palette (for disabling the "Add" button)
-  const isMarkerAlreadyInSelectedPalette = selectedPaletteId 
+  const isMarkerAlreadyInSelectedPalette = selectedPaletteId && selectedPaletteId !== '__CREATE_NEW_PALETTE__'
     ? belongingMarkerPalettes.some(p => p.id === selectedPaletteId)
     : false;
 
@@ -102,8 +114,8 @@ export default function MarkerDetailPage() {
   };
 
   const handleAddMarkerToPalette = () => {
-    if (!selectedPaletteId) {
-      toast({ title: 'No Palette Selected', description: 'Please select a palette to add the marker to.', variant: 'destructive'});
+    if (!selectedPaletteId || selectedPaletteId === '__CREATE_NEW_PALETTE__') {
+      toast({ title: 'No Palette Selected', description: 'Please select an existing palette or create a new one.', variant: 'destructive'});
       return;
     }
     if (isMarkerAlreadyInSelectedPalette) {
@@ -111,122 +123,156 @@ export default function MarkerDetailPage() {
        return;
     }
     addMarkerToPalette(selectedPaletteId, marker.id);
-    toast({ title: 'Marker Added to Palette', description: `${marker.name} added to selected palette.` });
-    // setSelectedPaletteId(''); // Keep selectedPaletteId to allow observing the disabled button state
+    toast({ title: 'Marker Added', description: `${marker.name} added to selected palette.` });
   };
 
   const handleRemoveMarkerFromPalette = (paletteId: string, paletteName: string) => {
     removeMarkerFromPalette(paletteId, marker.id);
     toast({ title: 'Marker Removed', description: `${marker.name} removed from "${paletteName}" palette.` });
   };
+  
+  const handleCreateAndAddPalette = () => {
+    if (newPaletteNameInput.trim() === '') {
+      toast({ title: 'Palette Name Required', description: 'Please enter a name for the new palette.', variant: 'destructive' });
+      return;
+    }
+    const newPaletteId = createMarkerPalette(newPaletteNameInput.trim());
+    if (newPaletteId) {
+      addMarkerToPalette(newPaletteId, marker.id);
+      toast({ title: 'Palette Created & Marker Added', description: `Palette "${newPaletteNameInput.trim()}" created and ${marker.name} added.` });
+      setSelectedPaletteId(newPaletteId); 
+    } else {
+      toast({ title: 'Creation Failed', description: 'Could not create the new palette.', variant: 'destructive' });
+    }
+    setIsCreatePaletteDialogOpen(false);
+    setNewPaletteNameInput('');
+  };
+
+
+  const handlePaletteSelectChange = (value: string) => {
+    if (value === '__CREATE_NEW_PALETTE__') {
+      setNewPaletteNameInput(''); 
+      setIsCreatePaletteDialogOpen(true);
+      // Keep selectedPaletteId as is, or clear it, so "Add" button behavior is correct
+      // For now, let's clear it so "Add" is disabled until an actual palette is chosen/created
+      setSelectedPaletteId(''); 
+    } else {
+      setSelectedPaletteId(value);
+    }
+  };
+
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => router.push('/')}>
-          <ArrowLeft className="h-4 w-4" />
-          <span className="sr-only">Back to Palette</span>
-        </Button>
-        <h1 className="font-semibold text-lg md:text-xl">{marker.name} ({marker.id})</h1>
-      </header>
+    <>
+      <div className="flex flex-col min-h-screen bg-background">
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => router.push('/')}>
+            <ArrowLeft className="h-4 w-4" />
+            <span className="sr-only">Back to Palette</span>
+          </Button>
+          <h1 className="font-semibold text-lg md:text-xl">{marker.name} ({marker.id})</h1>
+        </header>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="h-48 md:h-64 w-full shrink-0" style={{ backgroundColor: marker.hex }} aria-label={`Full color preview for ${marker.name}`} />
-        
-        <ScrollArea className="flex-1">
-          <div className="p-6">
-            <Card>
-              <CardHeader className="flex flex-row items-baseline justify-between">
-                <div>
-                  <CardTitle className="mb-1">{marker.name}</CardTitle>
-                  <CardDescription>{marker.id}</CardDescription>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => toggleFavoriteMarker(marker.id)}
-                  title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                  className="h-8 w-8 p-1 text-muted-foreground hover:text-red-500"
-                >
-                  <Heart className={cn("h-5 w-5", isFavorite ? "text-red-500 fill-current" : "")} />
-                </Button>
-              </CardHeader>
-              <CardContent className="p-6 pt-0 space-y-4">
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">Belongs to Sets:</h4>
-                  {belongingSets.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {belongingSets.map(set => (
-                        <Badge 
-                          key={set.id} 
-                          variant="secondary" 
-                          className="cursor-pointer hover:bg-primary/20"
-                          onClick={() => handleSetBadgeClick(set.id)}
-                          title={`View all markers in ${set.name} set`}
-                        >
-                          <Library className="mr-1 h-3 w-3" />
-                          {set.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">Not part of any defined sets.</p>
-                  )}
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2 mt-4">Belongs to Palettes:</h4> 
-                  {belongingMarkerPalettes.length > 0 ? ( 
-                    <ul className="space-y-2">
-                      {belongingMarkerPalettes.map(palette => ( 
-                        <li key={palette.id} className="flex items-center justify-between gap-2 p-2 border rounded-md hover:bg-muted/50">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="h-48 md:h-64 w-full shrink-0" style={{ backgroundColor: marker.hex }} aria-label={`Full color preview for ${marker.name}`} />
+          
+          <ScrollArea className="flex-1">
+            <div className="p-6">
+              <Card>
+                <CardHeader className="flex flex-row items-baseline justify-between">
+                  <div>
+                    <CardTitle className="mb-1">{marker.name}</CardTitle>
+                    <CardDescription>{marker.id}</CardDescription>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => toggleFavoriteMarker(marker.id)}
+                    title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                    className="h-8 w-8 p-1 text-muted-foreground hover:text-red-500"
+                  >
+                    <Heart className={cn("h-5 w-5", isFavorite ? "text-red-500 fill-current" : "")} />
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-6 pt-0 space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-2">Belongs to Sets:</h4>
+                    {belongingSets.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {belongingSets.map(set => (
                           <Badge 
-                            variant="outline"
-                            className="cursor-pointer hover:bg-accent/20 flex-grow text-left justify-start"
-                            onClick={() => handlePaletteBadgeClick(palette.id)}
-                            title={`View markers in "${palette.name}" palette`}
+                            key={set.id} 
+                            variant="secondary" 
+                            className="cursor-pointer hover:bg-primary/20"
+                            onClick={() => handleSetBadgeClick(set.id)}
+                            title={`View all markers in ${set.name} set`}
                           >
-                            <SwatchBook className="mr-1 h-3 w-3" /> 
-                            {palette.name}
+                            <Library className="mr-1 h-3 w-3" />
+                            {set.name}
                           </Badge>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 p-1 text-destructive hover:bg-destructive/10" title={`Remove from "${palette.name}" palette`}>
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Confirm Removal</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to remove marker "{marker.name}" from the "{palette.name}" palette?
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleRemoveMarkerFromPalette(palette.id, palette.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Remove
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">Not part of any custom palettes.</p> 
-                  )}
-                </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Not part of any defined sets.</p>
+                    )}
+                  </div>
 
-                {markerPalettes.length > 0 && ( 
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-2 mt-4">Belongs to Palettes:</h4> 
+                    {belongingMarkerPalettes.length > 0 ? ( 
+                      <ul className="space-y-2">
+                        {belongingMarkerPalettes.map(palette => ( 
+                          <li key={palette.id} className="flex items-center justify-between gap-2 p-2 border rounded-md hover:bg-muted/50">
+                            <Badge 
+                              variant="outline"
+                              className="cursor-pointer hover:bg-accent/20 flex-grow text-left justify-start"
+                              onClick={() => handlePaletteBadgeClick(palette.id)}
+                              title={`View markers in "${palette.name}" palette`}
+                            >
+                              <SwatchBook className="mr-1 h-3 w-3" /> 
+                              {palette.name}
+                            </Badge>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 p-1 text-destructive hover:bg-destructive/10" title={`Remove from "${palette.name}" palette`}>
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Confirm Removal</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to remove marker "{marker.name}" from the "{palette.name}" palette?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleRemoveMarkerFromPalette(palette.id, palette.name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Remove
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Not part of any custom palettes.</p> 
+                    )}
+                  </div>
+
                   <div className="mt-4 pt-4 border-t">
                     <Label htmlFor="palette-select" className="text-sm font-semibold text-foreground mb-2 block">Add to Palette:</Label> 
                     <div className="flex items-center gap-2">
-                      <Select value={selectedPaletteId} onValueChange={setSelectedPaletteId}> 
+                      <Select value={selectedPaletteId} onValueChange={handlePaletteSelectChange}> 
                         <SelectTrigger id="palette-select" className="flex-grow"> 
-                          <SelectValue placeholder="Select a palette" /> 
+                          <SelectValue placeholder="Select or create palette" /> 
                         </SelectTrigger>
                         <SelectContent>
+                           <SelectItem value="__CREATE_NEW_PALETTE__">
+                              <PlusCircle className="mr-2 h-4 w-4" /> Create New Palette...
+                            </SelectItem>
+                          {markerPalettes.length > 0 && <SelectSeparator />}
                           {markerPalettes.map(palette => ( 
                             <SelectItem key={palette.id} value={palette.id}>
                               {palette.name}
@@ -237,31 +283,59 @@ export default function MarkerDetailPage() {
                       <Button 
                         onClick={handleAddMarkerToPalette} 
                         title={isMarkerAlreadyInSelectedPalette ? `${marker.name} is already in this palette` : "Add to selected palette"} 
-                        disabled={!selectedPaletteId || isMarkerAlreadyInSelectedPalette}
+                        disabled={!selectedPaletteId || isMarkerAlreadyInSelectedPalette || selectedPaletteId === '__CREATE_NEW_PALETTE__'}
                       > 
                         <PlusCircle className="mr-2 h-4 w-4" /> Add
                       </Button>
                     </div>
                   </div>
-                )}
 
-              </CardContent>
-            </Card>
-          </div>
-        </ScrollArea>
-        
-        <div className="p-6 pt-0 shrink-0">
-          <div className="flex flex-col sm:flex-row gap-2 mt-4">
-            <Button onClick={() => router.push('/')} variant="outline" className="w-full sm:w-auto">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Palette
-            </Button>
-            <Button onClick={handleExploreClick} className="w-full sm:w-auto">
-              <Compass className="mr-2 h-4 w-4" />
-              Explore in Color Explorer
-            </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </ScrollArea>
+          
+          <div className="p-6 pt-0 shrink-0">
+            <div className="flex flex-col sm:flex-row gap-2 mt-4">
+              <Button onClick={() => router.push('/')} variant="outline" className="w-full sm:w-auto">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Palette
+              </Button>
+              <Button onClick={handleExploreClick} className="w-full sm:w-auto">
+                <Compass className="mr-2 h-4 w-4" />
+                Explore in Color Explorer
+              </Button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <Dialog open={isCreatePaletteDialogOpen} onOpenChange={setIsCreatePaletteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Palette</DialogTitle>
+            <DialogDescription>
+              Enter a name for your new palette. The current marker ({marker.name}) will be added to it automatically.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="New palette name..."
+              value={newPaletteNameInput}
+              onChange={(e) => setNewPaletteNameInput(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button type="button" onClick={handleCreateAndAddPalette} disabled={newPaletteNameInput.trim() === ''}>
+              Create & Add
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
+
