@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMarkerData } from '@/hooks/use-marker-data';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Compass, Info, Heart, PlusCircle, SwatchBook, Library, XCircle, Edit3Icon } from 'lucide-react';
+import { ArrowLeft, Compass, Info, Heart, PlusCircle, SwatchBook, Library, XCircle, Edit3Icon, MoreHorizontal } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Marker, MarkerSet, MarkerPalette } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,6 +14,12 @@ import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +29,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -57,9 +62,12 @@ export default function MarkerDetailPage() {
   const markerId = typeof params.id === 'string' ? params.id : '';
   const marker = getMarkerById(markerId);
 
-  const [selectedPaletteId, setSelectedPaletteId] = useState<string>('');
   const [isCreatePaletteDialogOpen, setIsCreatePaletteDialogOpen] = useState(false);
   const [newPaletteNameInput, setNewPaletteNameInput] = useState('');
+  
+  const [isAddToExistingPaletteDialogOpen, setIsAddToExistingPaletteDialogOpen] = useState(false);
+  const [paletteIdToAddTo, setPaletteIdToAddTo] = useState<string>('');
+
 
   useEffect(() => {
     if (isInitialized && !marker) {
@@ -97,8 +105,8 @@ export default function MarkerDetailPage() {
 
   const belongingMarkerPalettes = getPalettesForMarker(marker.id);
   
-  const isMarkerAlreadyInSelectedPalette = selectedPaletteId
-    ? belongingMarkerPalettes.some(p => p.id === selectedPaletteId)
+  const isMarkerAlreadyInSelectedAddToPalette = paletteIdToAddTo
+    ? belongingMarkerPalettes.some(p => p.id === paletteIdToAddTo)
     : false;
 
   const handleExploreClick = () => {
@@ -113,17 +121,19 @@ export default function MarkerDetailPage() {
     router.push(`/?activePage=palette&filterPaletteId=${paletteId}`);
   };
 
-  const handleAddMarkerToExistingPalette = () => {
-    if (!selectedPaletteId) {
-      toast({ title: 'No Palette Selected', description: 'Please select an existing palette.', variant: 'destructive'});
+  const handleConfirmAddMarkerToExistingPalette = () => {
+    if (!paletteIdToAddTo) {
+      toast({ title: 'No Palette Selected', description: 'Please select an existing palette from the dropdown.', variant: 'destructive'});
       return;
     }
-    if (isMarkerAlreadyInSelectedPalette) {
+    if (isMarkerAlreadyInSelectedAddToPalette) {
        toast({ title: 'Already in Palette', description: `${marker.name} is already in the selected palette.`, variant: 'default' });
        return;
     }
-    addMarkerToPalette(selectedPaletteId, marker.id);
-    toast({ title: 'Marker Added', description: `${marker.name} added to selected palette.` });
+    addMarkerToPalette(paletteIdToAddTo, marker.id);
+    toast({ title: 'Marker Added', description: `${marker.name} added to the selected palette.` });
+    setIsAddToExistingPaletteDialogOpen(false);
+    setPaletteIdToAddTo('');
   };
 
   const handleRemoveMarkerFromPalette = (paletteId: string, paletteName: string) => {
@@ -140,7 +150,6 @@ export default function MarkerDetailPage() {
     if (newPaletteId) {
       addMarkerToPalette(newPaletteId, marker.id);
       toast({ title: 'Palette Created & Marker Added', description: `Palette "${newPaletteNameInput.trim()}" created and ${marker.name} added.` });
-      setSelectedPaletteId(newPaletteId); 
     } else {
       toast({ title: 'Creation Failed', description: 'Could not create the new palette.', variant: 'destructive' });
     }
@@ -209,8 +218,31 @@ export default function MarkerDetailPage() {
                     )}
                   </div>
 
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-2 mt-4">Belongs to Palettes:</h4> 
+                  <div className="pt-4 border-t">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-semibold text-foreground">Belongs to Palettes:</h4>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 p-1" title="Palette Actions">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setPaletteIdToAddTo(''); // Reset selection
+                              setIsAddToExistingPaletteDialogOpen(true);
+                            }}
+                            disabled={markerPalettes.length === 0}
+                          >
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add to existing palette...
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={openCreatePaletteDialog}>
+                            <Edit3Icon className="mr-2 h-4 w-4" /> Create new palette & add...
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                     {belongingMarkerPalettes.length > 0 ? ( 
                       <ul className="space-y-2">
                         {belongingMarkerPalettes.map(palette => ( 
@@ -252,47 +284,6 @@ export default function MarkerDetailPage() {
                       <p className="text-sm text-muted-foreground italic">Not part of any custom palettes.</p> 
                     )}
                   </div>
-
-                  <div className="mt-4 pt-4 border-t space-y-3">
-                    <div>
-                      <Label htmlFor="palette-select" className="text-sm font-semibold text-foreground mb-2 block">Add to Existing Palette:</Label> 
-                      <div className="flex items-center gap-2">
-                        <Select 
-                          value={selectedPaletteId} 
-                          onValueChange={setSelectedPaletteId}
-                          disabled={markerPalettes.length === 0}
-                        > 
-                          <SelectTrigger id="palette-select" className="flex-grow"> 
-                            <SelectValue placeholder={markerPalettes.length > 0 ? "Select existing palette" : "No palettes created yet"} /> 
-                          </SelectTrigger>
-                          <SelectContent>
-                            {markerPalettes.map(palette => ( 
-                              <SelectItem key={palette.id} value={palette.id}>
-                                {palette.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button 
-                          onClick={handleAddMarkerToExistingPalette} 
-                          title={isMarkerAlreadyInSelectedPalette ? `${marker.name} is already in this palette` : "Add to selected palette"} 
-                          disabled={!selectedPaletteId || isMarkerAlreadyInSelectedPalette || markerPalettes.length === 0}
-                        > 
-                          <PlusCircle className="mr-2 h-4 w-4" /> Add
-                        </Button>
-                      </div>
-                    </div>
-                    <div>
-                       <Button 
-                          onClick={openCreatePaletteDialog} 
-                          variant="outline"
-                          className="w-full"
-                        > 
-                          <Edit3Icon className="mr-2 h-4 w-4" /> Create New Palette & Add This Marker
-                        </Button>
-                    </div>
-                  </div>
-
                 </CardContent>
               </Card>
             </div>
@@ -312,6 +303,7 @@ export default function MarkerDetailPage() {
         </div>
       </div>
 
+      {/* Dialog for Creating a New Palette */}
       <Dialog open={isCreatePaletteDialogOpen} onOpenChange={setIsCreatePaletteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -338,8 +330,55 @@ export default function MarkerDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog for Adding to Existing Palette */}
+      <Dialog open={isAddToExistingPaletteDialogOpen} onOpenChange={setIsAddToExistingPaletteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Marker to Existing Palette</DialogTitle>
+            <DialogDescription>
+              Select an existing palette to add {marker.name} ({marker.id}) to.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-2">
+            <Label htmlFor="existing-palette-select">Select Palette:</Label>
+            <Select 
+              value={paletteIdToAddTo} 
+              onValueChange={setPaletteIdToAddTo}
+              disabled={markerPalettes.length === 0}
+            > 
+              <SelectTrigger id="existing-palette-select" className="flex-grow"> 
+                <SelectValue placeholder={markerPalettes.length > 0 ? "Select existing palette" : "No palettes created yet"} /> 
+              </SelectTrigger>
+              <SelectContent>
+                {markerPalettes.map(palette => ( 
+                  <SelectItem key={palette.id} value={palette.id}>
+                    {palette.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {isMarkerAlreadyInSelectedAddToPalette && (
+              <p className="text-xs text-destructive">This marker is already in the selected palette.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" onClick={() => setPaletteIdToAddTo('')}>Cancel</Button>
+            </DialogClose>
+            <Button 
+              type="button" 
+              onClick={handleConfirmAddMarkerToExistingPalette} 
+              disabled={!paletteIdToAddTo || isMarkerAlreadyInSelectedAddToPalette || markerPalettes.length === 0}
+            >
+              Add to Palette
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
+    
 
     
