@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -153,8 +152,6 @@ export default function MarkerDetailPage() {
     if (value === '__CREATE_NEW_PALETTE__') {
       setNewPaletteNameInput(''); 
       setIsCreatePaletteDialogOpen(true);
-      // Keep selectedPaletteId as is, or clear it, so "Add" button behavior is correct
-      // For now, let's clear it so "Add" is disabled until an actual palette is chosen/created
       setSelectedPaletteId(''); 
     } else {
       setSelectedPaletteId(value);
@@ -270,7 +267,7 @@ export default function MarkerDetailPage() {
                         </SelectTrigger>
                         <SelectContent>
                            <SelectItem value="__CREATE_NEW_PALETTE__">
-                              <PlusCircle className="mr-2 h-4 w-4" /> Create New Palette...
+                              <PlusCircle className="mr-2 h-4 w-4" /> New Palette...
                             </SelectItem>
                           {markerPalettes.length > 0 && <SelectSeparator />}
                           {markerPalettes.map(palette => ( 
@@ -338,4 +335,3 @@ export default function MarkerDetailPage() {
     </>
   );
 }
-
